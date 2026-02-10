@@ -16,7 +16,7 @@ export class StorageService {
   constructor(config: ConfigService) {
     this.bucket = config.get<string>('STORAGE_BUCKET', '');
     this.client = new S3Client({
-      region: 'auto',
+      region: 'af-south-1',
       endpoint: config.get<string>('STORAGE_ENDPOINT'),
       credentials: {
         accessKeyId: config.get<string>('STORAGE_ACCESS_KEY', ''),
