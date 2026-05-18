@@ -1,4 +1,4 @@
-# Forever Arteffects --- Backend Architecture
+# Forever Artefacts --- Backend Architecture
 
 ## Purpose
 
