@@ -8,21 +8,19 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 @Injectable()
-//TODO: Configure AWS account and link to storage service
 export class StorageService {
   private readonly client: S3Client;
   private readonly bucket: string;
 
   constructor(config: ConfigService) {
     this.bucket = config.get<string>('STORAGE_BUCKET', '');
-    this.client = new S3Client({
-      region: 'af-south-1',
-      endpoint: config.get<string>('STORAGE_ENDPOINT'),
-      credentials: {
-        accessKeyId: config.get<string>('STORAGE_ACCESS_KEY', ''),
-        secretAccessKey: config.get<string>('STORAGE_SECRET_KEY', ''),
-      },
-    });
+this.client = new S3Client({
+  region: config.get<string>('AWS_REGION', 'af-south-1'),
+  credentials: {
+    accessKeyId: config.get<string>('STORAGE_ACCESS_KEY', ''),
+    secretAccessKey: config.get<string>('STORAGE_SECRET_KEY', ''),
+  },
+});
   }
 
   getPresignedUploadUrl(
