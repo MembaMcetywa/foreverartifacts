@@ -8,6 +8,7 @@ import { AssetsModule } from './assets/assets.module';
 import { AlbumsModule } from './albums/albums.module';
 import { RenderModule } from './render/render.module';
 import { StorageModule } from './storage/storage.module';
+import { DatabaseModule } from './database/database.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { StorageModule } from './storage/storage.module';
     AlbumsModule,
     RenderModule,
     StorageModule,
+    DatabaseModule,
   ],
   controllers: [AppController],
   providers: [AppService],
