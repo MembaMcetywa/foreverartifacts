@@ -73,11 +73,10 @@ export class RenderService {
       element: RenderImageElement,
     ): Promise<void> {
 
-     const asset = this.assetsService.getAsset(element.assetId);
-
-     const downloadUrl = await this.storage.getPresignedDownloadUrl(asset.key);
-     const response = await fetch(downloadUrl);
-     const imageBytes = new Uint8Array(await response.arrayBuffer());
+    const asset = await this.assetsService.getAsset(element.assetId);
+    const downloadUrl = await this.storage.getPresignedDownloadUrl(asset.key);
+    const response = await fetch(downloadUrl);
+    const imageBytes = new Uint8Array(await response.arrayBuffer());
     //  const imageBytes = await readFile('assets/test-image.jpg');
 
       const image =

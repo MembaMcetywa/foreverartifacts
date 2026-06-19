@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
+import { PrismaService } from '../database/prisma.service';
 import { StorageService } from '../storage/storage.service';
 
 interface CreateUploadUrlInput {
@@ -16,11 +17,10 @@ interface AssetRecord {
 
 @Injectable()
 export class AssetsService {
-  private readonly assets = new Map<string, AssetRecord>();
-
-  constructor(private readonly storage: StorageService) {}
-
-  // TODO: Persistence will be added once album drafts become durable.
+  constructor(
+    private readonly storage: StorageService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async createUploadUrl(
     input: CreateUploadUrlInput,
@@ -33,28 +33,42 @@ export class AssetsService {
       input.contentType,
     );
 
-    this.assets.set(assetId, {
-      id: assetId,
-      key,
-      contentType: input.contentType,
+    await this.prisma.asset.create({
+      data: {
+        id: assetId,
+        key,
+        contentType: input.contentType,
+      },
     });
 
     return { assetId, uploadUrl };
   }
 
   async deleteAsset(assetId: string): Promise<void> {
-    const asset = this.assets.get(assetId);
+    const asset = await this.prisma.asset.findUnique({
+      where: { id: assetId },
+    });
+
     if (!asset) return;
 
-    // Object deletion can be added later (MVP: metadata only)
-    this.assets.delete(assetId);
+    await this.prisma.asset.delete({
+      where: { id: assetId },
+    });
   }
 
-  getAsset(assetId: string): AssetRecord {
-    const asset = this.assets.get(assetId);
+  async getAsset(assetId: string): Promise<AssetRecord> {
+    const asset = await this.prisma.asset.findUnique({
+      where: { id: assetId },
+    });
+
     if (!asset) {
       throw new Error(`Unknown asset '${assetId}'.`);
     }
-    return asset;
+
+    return {
+      id: asset.id,
+      key: asset.key,
+      contentType: asset.contentType,
+    };
   }
 }

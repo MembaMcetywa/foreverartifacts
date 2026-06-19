@@ -1,17 +1,17 @@
-import { Controller, Post } from '@nestjs/common';
-import { RenderService } from './render.service';
+import { Controller, Get, Query } from '@nestjs/common';
+
+import { StorageService } from '../storage/storage.service';
 
 @Controller('render')
 export class RenderController {
-  constructor(private readonly renderService: RenderService) {}
+  constructor(private readonly storage: StorageService) {}
 
-  @Post('test')
-  async testRender(): Promise<{ ok: true }> {
-    await this.renderService.renderAlbum({
-      albumSpecId: 'square_210_v1',
-      spreads: [],
-    });
+  @Get('download-url')
+  async getDownloadUrl(
+    @Query('key') key: string,
+  ): Promise<{ downloadUrl: string }> {
+    const downloadUrl = await this.storage.getPresignedDownloadUrl(key);
 
-    return { ok: true };
+    return { downloadUrl };
   }
 }

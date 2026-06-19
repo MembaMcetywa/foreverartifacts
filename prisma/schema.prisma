@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Asset {
+  id          String   @id
+  key         String   @unique
+  contentType String
+  createdAt   DateTime @default(now())
+  slots AlbumSlot[]
+}
+
+model Album {
+  id          String   @id
+  albumSpecId String
+  state       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  spreads AlbumSpread[]
+}
+
+model AlbumSpread {
+  id         String @id
+  albumId    String
+  templateId String
+  order      Int
+  album Album       @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  slots AlbumSlot[]
+}
+
+model AlbumSlot {
+  id        String @id
+  spreadId  String
+  slotIndex Int
+  assetId   String
+  spread AlbumSpread @relation(fields: [spreadId], references: [id], onDelete: Cascade)
+  asset  Asset       @relation(fields: [assetId], references: [id])
+}
