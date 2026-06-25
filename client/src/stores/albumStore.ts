@@ -7,29 +7,59 @@ export interface UploadedAsset {
   previewUrl: string
 }
 
+export interface AlbumAsset {
+  assetId: string
+  key: string
+  contentType: string
+  order: number
+  previewUrl: string
+}
+
+export interface Album {
+  id: string
+  albumName: string
+  albumSpecId: string
+  state: string
+  assets: AlbumAsset[]
+}
+
 interface CreateAlbumStore {
   albumId: string | null
+  album: Album | null
   uploadedAssets: UploadedAsset[]
 
   setAlbumId: (albumId: string) => void
-  clearAlbumId: () => void
+  setAlbum: (album: Album) => void
+  clearAlbum: () => void
 
   addUploadedAsset: (asset: UploadedAsset) => void
   removeUploadedAsset: (assetId: string) => void
+  clearUploadedAssets: () => void
 }
 
 export const useCreateAlbumStore = create<CreateAlbumStore>()(
   persist(
     (set) => ({
       albumId: null,
+      album: null,
       uploadedAssets: [],
 
       setAlbumId: (albumId) => {
         set({ albumId })
       },
 
-      clearAlbumId: () => {
-        set({ albumId: null })
+      setAlbum: (album) => {
+        set({
+          album,
+          albumId: album.id,
+        })
+      },
+
+      clearAlbum: () => {
+        set({
+          albumId: null,
+          album: null,
+        })
       },
 
       addUploadedAsset: (asset) => {
@@ -44,6 +74,10 @@ export const useCreateAlbumStore = create<CreateAlbumStore>()(
             (asset) => asset.assetId !== assetId,
           ),
         }))
+      },
+
+      clearUploadedAssets: () => {
+        set({ uploadedAssets: [] })
       },
     }),
     {

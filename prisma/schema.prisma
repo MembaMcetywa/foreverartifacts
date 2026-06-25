@@ -7,24 +7,42 @@ datasource db {
 }
 
 model Asset {
-  id          String      @id
-  key         String      @unique
+  id          String       @id
+  key         String       @unique
   contentType String
-  createdAt   DateTime    @default(now())
+  createdAt   DateTime     @default(now())
+
   slots       AlbumSlot[]
+  albumAssets AlbumAsset[]
 }
 
 model Album {
   id          String        @id
+  albumName   String
   albumSpecId String
   state       String
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+
   spreads     AlbumSpread[]
+  assets      AlbumAsset[]
+}
+
+model AlbumAsset {
+  id      String @id
+  albumId String
+  assetId String
+  order   Int
+
+  album Album @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  asset Asset @relation(fields: [assetId], references: [id])
+
+  @@unique([albumId, assetId])
+  @@unique([albumId, order])
 }
 
 model AlbumSpread {
-  id         String      @id
+  id         String @id
   albumId    String
   templateId String
   order      Int
