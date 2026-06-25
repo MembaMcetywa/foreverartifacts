@@ -1,9 +1,4 @@
-/*
-  Warnings:
 
-  - Added the required column `albumName` to the `Album` table without a default value. This is not possible if the table is not empty.
-
-*/
 -- CreateTable
 CREATE TABLE "AlbumAsset" (
     "id" TEXT NOT NULL PRIMARY KEY,
