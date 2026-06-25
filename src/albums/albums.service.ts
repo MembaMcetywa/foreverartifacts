@@ -1,46 +1,65 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
+import { PrismaService } from '../database/prisma.service';
 import { LayoutRegistryService } from '../layout/layout.registry.service';
-import { Album, AlbumSpread, AlbumState } from './album.types';
+import { AlbumSpread, AlbumState } from './album.types';
+
+interface CreateAlbumInput {
+  albumSpecId: string;
+  assetIds: string[];
+}
 
 @Injectable()
 export class AlbumsService {
-  private readonly albums = new Map<string, Album>();
+  constructor(
+    private readonly layoutRegistry: LayoutRegistryService,
+    private readonly prisma: PrismaService,
+  ) {}
 
-  constructor(private readonly layoutRegistry: LayoutRegistryService) {}
+  async createAlbum(input: CreateAlbumInput) {
+    this.layoutRegistry.getAlbumSpec(input.albumSpecId);
 
-  createAlbum(albumSpecId: string): Album {
-    // Ensure spec exists
-    this.layoutRegistry.getAlbumSpec(albumSpecId);
+    const albumId = randomUUID();
 
-    const album: Album = {
-      id: randomUUID(),
-      albumSpecId,
-      state: 'draft',
-      spreads: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    this.albums.set(album.id, album);
-    return album;
+    return this.prisma.album.create({
+      data: {
+        id: albumId,
+        albumName: albumId,
+        albumSpecId: input.albumSpecId,
+        state: 'draft',
+        assets: {
+          create: input.assetIds.map((assetId, index) => ({
+            id: randomUUID(),
+            assetId,
+            order: index,
+          })),
+        },
+      },
+      include: this.albumInclude(),
+    });
   }
 
-  getAlbum(albumId: string): Album {
-    const album = this.albums.get(albumId);
+  async getAlbum(albumId: string) {
+    const album = await this.prisma.album.findUnique({
+      where: { id: albumId },
+      include: this.albumInclude(),
+    });
+
     if (!album) {
-      throw new Error(`Unknown album '${albumId}'.`);
+      throw new NotFoundException(`Album '${albumId}' not found.`);
     }
+
     return album;
   }
 
-  addSpread(albumId: string, spread: AlbumSpread): Album {
-    const album = this.getAlbum(albumId);
+  async addSpread(albumId: string, spread: AlbumSpread) {
+    const album = await this.getAlbum(albumId);
 
     const library = this.layoutRegistry.getLayoutLibrary(album.albumSpecId);
-
-    const template = library.templates.find((t) => t.id === spread.templateId);
+    const template = library.templates.find(
+      (template) => template.id === spread.templateId,
+    );
 
     if (!template) {
       throw new Error(
@@ -54,20 +73,63 @@ export class AlbumsService {
       );
     }
 
-    album.spreads.push(spread);
-    album.updatedAt = new Date();
+    const order = album.spreads.length;
 
-    return album;
+    await this.prisma.albumSpread.create({
+      data: {
+        id: randomUUID(),
+        albumId,
+        templateId: spread.templateId,
+        order,
+        slots: {
+          create: spread.slots.map((slot) => ({
+            id: randomUUID(),
+            slotIndex: slot.slotIndex,
+            assetId: slot.assetId,
+          })),
+        },
+      },
+    });
+
+    return this.getAlbum(albumId);
   }
 
-  setState(albumId: string, state: AlbumState): Album {
-    const album = this.getAlbum(albumId);
-    album.state = state;
-    album.updatedAt = new Date();
-    return album;
+  async setState(albumId: string, state: AlbumState) {
+    await this.getAlbum(albumId);
+
+    return this.prisma.album.update({
+      where: { id: albumId },
+      data: { state },
+      include: this.albumInclude(),
+    });
   }
 
-  listAlbums(): Album[] {
-    return Array.from(this.albums.values());
+  async listAlbums() {
+    return this.prisma.album.findMany({
+      include: this.albumInclude(),
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  private albumInclude() {
+    return {
+      assets: {
+        orderBy: { order: 'asc' as const },
+        include: {
+          asset: true,
+        },
+      },
+      spreads: {
+        orderBy: { order: 'asc' as const },
+        include: {
+          slots: {
+            orderBy: { slotIndex: 'asc' as const },
+            include: {
+              asset: true,
+            },
+          },
+        },
+      },
+    };
   }
 }

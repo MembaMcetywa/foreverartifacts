@@ -1,19 +1,26 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 
 import { RenderService } from '../render/render.service';
+import { StorageService } from '../storage/storage.service';
 import { AlbumsService } from './albums.service';
 import { AlbumSpread } from './album.types';
+
+type AlbumRecord = Awaited<ReturnType<AlbumsService['getAlbum']>>;
 
 @Controller('albums')
 export class AlbumsController {
   constructor(
     private readonly albumsService: AlbumsService,
     private readonly renderService: RenderService,
+    private readonly storageService: StorageService,
   ) {}
 
   @Post()
-  create(@Body() body: { albumSpecId: string }) {
-    return this.albumsService.createAlbum(body.albumSpecId);
+  create(@Body() body: { albumSpecId: string; assetIds: string[] }) {
+    return this.albumsService.createAlbum({
+      albumSpecId: body.albumSpecId,
+      assetIds: body.assetIds,
+    });
   }
 
   @Get()
@@ -22,8 +29,10 @@ export class AlbumsController {
   }
 
   @Get(':id')
-  get(@Param('id') id: string) {
-    return this.albumsService.getAlbum(id);
+  async get(@Param('id') id: string) {
+    const album = await this.albumsService.getAlbum(id);
+
+    return this.toAlbumDto(album);
   }
 
   @Post(':id/spreads')
@@ -33,11 +42,42 @@ export class AlbumsController {
 
   @Post(':id/render')
   async render(@Param('id') id: string) {
-    const album = this.albumsService.getAlbum(id);
+    const album = await this.albumsService.getAlbum(id);
 
     return this.renderService.renderAlbum({
       albumSpecId: album.albumSpecId,
-      spreads: album.spreads,
+      spreads: album.spreads.map((spread) => ({
+        templateId: spread.templateId,
+        slots: spread.slots.map((slot) => ({
+          slotIndex: slot.slotIndex,
+          assetId: slot.assetId,
+        })),
+      })),
     });
+  }
+
+  private async toAlbumDto(album: AlbumRecord) {
+    const assets = await Promise.all(
+      album.assets.map(async (albumAsset) => ({
+        assetId: albumAsset.asset.id,
+        key: albumAsset.asset.key,
+        contentType: albumAsset.asset.contentType,
+        order: albumAsset.order,
+        previewUrl: await this.storageService.getPresignedDownloadUrl(
+          albumAsset.asset.key,
+        ),
+      })),
+    );
+
+    return {
+      id: album.id,
+      albumName: album.albumName,
+      albumSpecId: album.albumSpecId,
+      state: album.state,
+      createdAt: album.createdAt,
+      updatedAt: album.updatedAt,
+      assets,
+      spreads: album.spreads,
+    };
   }
 }
