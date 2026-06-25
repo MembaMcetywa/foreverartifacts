@@ -13,7 +13,7 @@ interface CreateAlbumResponse {
   state: string
 }
 
-const API_BASE_URL = 'http://localhost:3000'
+const API_BASE_URL = process.env.API_BASE_URL
 const ALBUM_SPEC_ID = 'square_210_v1'
 
 function CreateAlbumPage() {
@@ -23,35 +23,38 @@ function CreateAlbumPage() {
   const setAlbumId = useCreateAlbumStore((state) => state.setAlbumId)
   const uploadedAssets = useCreateAlbumStore((state) => state.uploadedAssets)
 
-  async function handleCreateAlbum(event: { preventDefault: () => void }) {
-    event.preventDefault()
+async function handleCreateAlbum(event: { preventDefault: () => void }) {
+  event.preventDefault()
 
-    if (isCreating || albumId) return
+  if (isCreating || albumId || uploadedAssets.length === 0) return
 
-    setIsCreating(true)
+  setIsCreating(true)
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/albums`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          albumSpecId: ALBUM_SPEC_ID,
-        }),
-      })
+  try {
+    const assetIds = uploadedAssets.map((asset) => asset.assetId)
 
-      if (!response.ok) {
-        throw new Error('Failed to create album.')
-      }
+    const response = await fetch(`${API_BASE_URL}/albums`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        albumSpecId: ALBUM_SPEC_ID,
+        assetIds,
+      }),
+    })
 
-      const album = (await response.json()) as CreateAlbumResponse
-
-      setAlbumId(album.id)
-    } finally {
-      setIsCreating(false)
+    if (!response.ok) {
+      throw new Error('Failed to create album.')
     }
+
+    const album = (await response.json()) as CreateAlbumResponse
+
+    setAlbumId(album.id)
+  } finally {
+    setIsCreating(false)
   }
+}
 
   return (
     <main className="min-h-screen bg-[#f8f7f4] text-[#111111]">
