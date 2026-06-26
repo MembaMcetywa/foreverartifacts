@@ -32,6 +32,12 @@ export const Route = createRootRoute({
         rel: 'stylesheet',
         href: appCss,
       },
+          { 
+      rel: 'icon', 
+      type: 'image/png', 
+      href: '/icon.jpg', 
+      sizes: '32x32' 
+    },
     ],
   }),
   shellComponent: RootDocument,
