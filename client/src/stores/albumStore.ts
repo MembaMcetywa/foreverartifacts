@@ -1,3 +1,4 @@
+import type { Album } from '#/api/albums'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
@@ -7,21 +8,6 @@ export interface UploadedAsset {
   previewUrl: string
 }
 
-export interface AlbumAsset {
-  assetId: string
-  key: string
-  contentType: string
-  order: number
-  previewUrl: string
-}
-
-export interface Album {
-  id: string
-  albumName: string
-  albumSpecId: string
-  state: string
-  assets: AlbumAsset[]
-}
 
 interface CreateAlbumStore {
   albumId: string | null
