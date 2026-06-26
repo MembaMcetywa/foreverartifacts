@@ -56,28 +56,51 @@ export class AlbumsController {
     });
   }
 
-  private async toAlbumDto(album: AlbumRecord) {
-    const assets = await Promise.all(
-      album.assets.map(async (albumAsset) => ({
-        assetId: albumAsset.asset.id,
-        key: albumAsset.asset.key,
-        contentType: albumAsset.asset.contentType,
-        order: albumAsset.order,
-        previewUrl: await this.storageService.getPresignedDownloadUrl(
-          albumAsset.asset.key,
-        ),
-      })),
-    );
+private async toAlbumDto(album: AlbumRecord) {
+  const assets = await Promise.all(
+    album.assets.map(async (albumAsset) => ({
+      assetId: albumAsset.asset.id,
+      key: albumAsset.asset.key,
+      contentType: albumAsset.asset.contentType,
+      order: albumAsset.order,
+      previewUrl: await this.storageService.getPresignedDownloadUrl(
+        albumAsset.asset.key,
+      ),
+    })),
+  );
 
-    return {
-      id: album.id,
-      albumName: album.albumName,
-      albumSpecId: album.albumSpecId,
-      state: album.state,
-      createdAt: album.createdAt,
-      updatedAt: album.updatedAt,
-      assets,
-      spreads: album.spreads,
+  const spreads = await Promise.all(
+    album.spreads.map(async (spread) => ({
+      id: spread.id,
+      templateId: spread.templateId,
+      order: spread.order,
+      slots: await Promise.all(
+        spread.slots.map(async (slot) => ({
+          id: slot.id,
+          slotIndex: slot.slotIndex,
+          assetId: slot.assetId,
+          asset: {
+            id: slot.asset.id,
+            key: slot.asset.key,
+            contentType: slot.asset.contentType,
+            previewUrl: await this.storageService.getPresignedDownloadUrl(
+              slot.asset.key,
+            ),
+          },
+        })),
+      ),
+    })),
+  );
+
+  return {
+    id: album.id,
+    albumName: album.albumName,
+    albumSpecId: album.albumSpecId,
+    state: album.state,
+    createdAt: album.createdAt,
+    updatedAt: album.updatedAt,
+    assets,
+    spreads,
     };
   }
 }

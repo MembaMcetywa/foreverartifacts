@@ -11,15 +11,37 @@ export interface AlbumAsset {
   previewUrl: string
 }
 
+export interface AlbumSpreadSlotAsset {
+  id: string
+  key: string
+  contentType: string
+  previewUrl: string
+}
+
+export interface AlbumSpreadSlot {
+  id: string
+  slotIndex: number
+  assetId: string
+  asset: AlbumSpreadSlotAsset
+}
+
+export interface AlbumSpread {
+  id: string
+  templateId: string
+  order: number
+  slots: AlbumSpreadSlot[]
+}
+
 export interface Album {
   id: string
   albumName: string
   albumSpecId: string
   state: string
   assets: AlbumAsset[]
+  spreads: AlbumSpread[]
 }
 
-const API_BASE_URL = process.env.API_BASE_URL ?? 'http://localhost:3000'
+const API_BASE_URL = import.meta.env.API_BASE_URL ?? 'http://localhost:3000'
 
 export async function createAlbum(input: CreateAlbumInput): Promise<Album> {
   const response = await fetch(`${API_BASE_URL}/albums`, {
