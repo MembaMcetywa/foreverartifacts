@@ -128,6 +128,16 @@ function CreateAlbumPage() {
     })
   }
 
+  const showSpreadReview = Boolean(album && album.spreads.length > 0)
+
+  function getTemplateName(templateId: string): string {
+    if (templateId in TEMPLATE_OPTIONS_BY_ID) {
+      return TEMPLATE_OPTIONS_BY_ID[templateId as TemplateId].name
+    }
+
+    return templateId
+  }
+
     useEffect(() => {
       if (albumQuery.data) {
         setAlbum(albumQuery.data)
@@ -315,6 +325,41 @@ function CreateAlbumPage() {
                 {addSpreadMutation.isPending ? 'Adding spread…' : 'Add spread'}
               </button>
             </form>
+
+            {showSpreadReview && (
+              <section className="mt-16">
+                <p className="mb-4 text-sm text-neutral-500">Album spreads</p>
+
+                <div className="grid gap-4">
+                  {album.spreads.map((spread, index) => (
+                    <article
+                      key={spread.id}
+                      className="border border-neutral-300 bg-white p-5"
+                    >
+                      <p className="mb-4 text-sm text-neutral-500">
+                        Spread {index + 1} ·{' '}
+                        {getTemplateName(spread.templateId)}
+                      </p>
+
+                      <div className="grid grid-cols-4 gap-3 md:grid-cols-6">
+                        {spread.slots.map((slot) => (
+                          <div
+                            key={slot.id}
+                            className="aspect-square overflow-hidden bg-neutral-100"
+                          >
+                            <img
+                              src={slot.asset.previewUrl}
+                              alt="Spread photo"
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         )}
       </section>
