@@ -12,7 +12,7 @@ interface UploadUrlResponse {
   uploadUrl: string
 }
 
-const API_BASE_URL = process.env.API_BASE_URL ?? 'http://localhost:3000'
+const API_BASE_URL = import.meta.env.API_BASE_URL ?? 'http://localhost:3000'
 
 function CreatePage() {
   const [selectedImages, setSelectedImages] = useState<File[]>([])
