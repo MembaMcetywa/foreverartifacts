@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { PDFDocument } from 'pdf-lib';
 
 import { LayoutRegistryService } from '../layout/layout.registry.service';
+import { ImageElementPlacement } from '../layout/layout.templates';
 import { AssetsService } from '../assets/assets.service';
 import { StorageService } from '../storage/storage.service';
 
@@ -123,12 +124,15 @@ export class RenderService {
 
       for (const side of ['left', 'right'] as const) {
         const elements: RenderImageElement[] = template.elements
-          .filter((el) => el.type === 'image' && el.pageSide === side)
-          .map((el, index): RenderImageElement => {
-            const assetId = slotMap.get(index);
+          .filter(
+            (el): el is ImageElementPlacement =>
+              el.type === 'image' && el.pageSide === side,
+          )
+          .map((el): RenderImageElement => {
+            const assetId = slotMap.get(el.slotIndex);
             if (!assetId) {
               throw new Error(
-                `Missing asset for slot ${index} in template '${template.id}'.`,
+                `Missing asset for slot ${el.slotIndex} in template '${template.id}'.`,
               );
             }
 
