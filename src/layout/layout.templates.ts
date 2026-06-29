@@ -4,6 +4,8 @@
  */
 export type LayoutElementType = 'image' | 'caption' | 'metadata';
 
+export type ImageFit = 'cover';
+
 /**
  * Page side within a spread.
  */
@@ -27,9 +29,8 @@ export type VerticalAnchor = 'top' | 'bottom';
  * Placement definition for a single layout element.
  * This is declarative intent, not computed geometry.
  */
-export interface ElementPlacement {
+interface BaseElementPlacement {
   id: string;
-  type: LayoutElementType;
   pageSide: PageSide;
 
   x: {
@@ -42,6 +43,20 @@ export interface ElementPlacement {
     heightMm: number;
   };
 }
+
+export interface ImageElementPlacement extends BaseElementPlacement {
+  type: 'image';
+  slotIndex: number;
+  fit: ImageFit;
+}
+
+export interface TextElementPlacement extends BaseElementPlacement {
+  type: Exclude<LayoutElementType, 'image'>;
+}
+
+export type ElementPlacement =
+  | ImageElementPlacement
+  | TextElementPlacement;
 
 /**
  * Layout template definition.
@@ -85,6 +100,8 @@ export const SQUARE_210_LAYOUT_LIBRARY: LayoutLibrary = {
         {
           id: 'image_full_left',
           type: 'image',
+          slotIndex: 0,
+          fit: 'cover',
           pageSide: 'left',
           x: {
             cols: { startCol: 1, span: 8 },
@@ -98,6 +115,8 @@ export const SQUARE_210_LAYOUT_LIBRARY: LayoutLibrary = {
         {
           id: 'image_full_right',
           type: 'image',
+          slotIndex: 0,
+          fit: 'cover',
           pageSide: 'right',
           x: {
             cols: { startCol: 1, span: 8 },
@@ -121,6 +140,8 @@ export const SQUARE_210_LAYOUT_LIBRARY: LayoutLibrary = {
         {
           id: 'image_single_left',
           type: 'image',
+          slotIndex: 0,
+          fit: 'cover',
           pageSide: 'left',
           x: {
             cols: { startCol: 2, span: 6 },
@@ -144,6 +165,8 @@ export const SQUARE_210_LAYOUT_LIBRARY: LayoutLibrary = {
         {
           id: 'image_left',
           type: 'image',
+          slotIndex: 0,
+          fit: 'cover',
           pageSide: 'left',
           x: {
             cols: { startCol: 1, span: 4 },
@@ -157,6 +180,8 @@ export const SQUARE_210_LAYOUT_LIBRARY: LayoutLibrary = {
         {
           id: 'image_right',
           type: 'image',
+          slotIndex: 1,
+          fit: 'cover',
           pageSide: 'left',
           x: {
             cols: { startCol: 5, span: 4 },

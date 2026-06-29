@@ -1,8 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { PDFDocument } from 'pdf-lib';
+import {
+  clip,
+  endPath,
+  PDFDocument,
+  popGraphicsState,
+  pushGraphicsState,
+  rectangle,
+} from 'pdf-lib';
 
 import { LayoutRegistryService } from '../layout/layout.registry.service';
+import { ImageElementPlacement } from '../layout/layout.templates';
 import { AssetsService } from '../assets/assets.service';
 import { StorageService } from '../storage/storage.service';
 
@@ -86,12 +94,30 @@ export class RenderService {
 
       const { xPt, yPt, widthPt, heightPt } = rectMmToPt(element.rect);
 
+      const scale = Math.max(
+        widthPt / image.width,
+        heightPt / image.height,
+      );
+      const renderedWidthPt = image.width * scale;
+      const renderedHeightPt = image.height * scale;
+      const renderedXPt = xPt - (renderedWidthPt - widthPt) / 2;
+      const renderedYPt = yPt - (renderedHeightPt - heightPt) / 2;
+
+      page.pushOperators(
+        pushGraphicsState(),
+        rectangle(xPt, yPt, widthPt, heightPt),
+        clip(),
+        endPath(),
+      );
+
       page.drawImage(image, {
-        x: xPt,
-        y: yPt,
-        width: widthPt,
-        height: heightPt,
+        x: renderedXPt,
+        y: renderedYPt,
+        width: renderedWidthPt,
+        height: renderedHeightPt,
       });
+
+      page.pushOperators(popGraphicsState());
     }
 
 
@@ -123,17 +149,21 @@ export class RenderService {
 
       for (const side of ['left', 'right'] as const) {
         const elements: RenderImageElement[] = template.elements
-          .filter((el) => el.type === 'image' && el.pageSide === side)
-          .map((el, index): RenderImageElement => {
-            const assetId = slotMap.get(index);
+          .filter(
+            (el): el is ImageElementPlacement =>
+              el.type === 'image' && el.pageSide === side,
+          )
+          .map((el): RenderImageElement => {
+            const assetId = slotMap.get(el.slotIndex);
             if (!assetId) {
               throw new Error(
-                `Missing asset for slot ${index} in template '${template.id}'.`,
+                `Missing asset for slot ${el.slotIndex} in template '${template.id}'.`,
               );
             }
 
             return {
               type: 'image',
+              fit: el.fit,
               assetId,
               rect: {
                 xMm: this.computeX(spec, el),

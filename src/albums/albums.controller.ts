@@ -1,47 +1,62 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+} from '@nestjs/common';
 
 import { RenderService } from '../render/render.service';
-import { StorageService } from '../storage/storage.service';
+import { AlbumPresenter } from './album.presenter';
+import {
+  AddAlbumSpreadDto,
+  AlbumResponseDto,
+  CreateAlbumDto,
+} from './albums.dto';
 import { AlbumsService } from './albums.service';
-import { AlbumSpread } from './album.types';
-
-type AlbumRecord = Awaited<ReturnType<AlbumsService['getAlbum']>>;
 
 @Controller('albums')
 export class AlbumsController {
   constructor(
     private readonly albumsService: AlbumsService,
     private readonly renderService: RenderService,
-    private readonly storageService: StorageService,
+    private readonly albumPresenter: AlbumPresenter,
   ) {}
 
   @Post()
-  create(@Body() body: { albumSpecId: string; assetIds: string[] }) {
-    return this.albumsService.createAlbum({
-      albumSpecId: body.albumSpecId,
-      assetIds: body.assetIds,
-    });
+  async create(@Body() body: CreateAlbumDto): Promise<AlbumResponseDto> {
+    const album = await this.albumsService.createAlbum(body);
+    return this.albumPresenter.toDto(album);
   }
 
   @Get()
-  list() {
-    return this.albumsService.listAlbums();
+  async list(): Promise<AlbumResponseDto[]> {
+    const albums = await this.albumsService.listAlbums();
+    return Promise.all(albums.map((album) => this.albumPresenter.toDto(album)));
   }
 
   @Get(':id')
-  async get(@Param('id') id: string) {
+  async get(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ): Promise<AlbumResponseDto> {
     const album = await this.albumsService.getAlbum(id);
-
-    return this.toAlbumDto(album);
+    return this.albumPresenter.toDto(album);
   }
 
   @Post(':id/spreads')
-  addSpread(@Param('id') id: string, @Body() spread: AlbumSpread) {
-    return this.albumsService.addSpread(id, spread);
+  async addSpread(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() spread: AddAlbumSpreadDto,
+  ): Promise<AlbumResponseDto> {
+    const album = await this.albumsService.addSpread(id, spread);
+    return this.albumPresenter.toDto(album);
   }
 
   @Post(':id/render')
-  async render(@Param('id') id: string) {
+  async render(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ) {
     const album = await this.albumsService.getAlbum(id);
 
     return this.renderService.renderAlbum({
@@ -54,53 +69,5 @@ export class AlbumsController {
         })),
       })),
     });
-  }
-
-private async toAlbumDto(album: AlbumRecord) {
-  const assets = await Promise.all(
-    album.assets.map(async (albumAsset) => ({
-      assetId: albumAsset.asset.id,
-      key: albumAsset.asset.key,
-      contentType: albumAsset.asset.contentType,
-      order: albumAsset.order,
-      previewUrl: await this.storageService.getPresignedDownloadUrl(
-        albumAsset.asset.key,
-      ),
-    })),
-  );
-
-  const spreads = await Promise.all(
-    album.spreads.map(async (spread) => ({
-      id: spread.id,
-      templateId: spread.templateId,
-      order: spread.order,
-      slots: await Promise.all(
-        spread.slots.map(async (slot) => ({
-          id: slot.id,
-          slotIndex: slot.slotIndex,
-          assetId: slot.assetId,
-          asset: {
-            id: slot.asset.id,
-            key: slot.asset.key,
-            contentType: slot.asset.contentType,
-            previewUrl: await this.storageService.getPresignedDownloadUrl(
-              slot.asset.key,
-            ),
-          },
-        })),
-      ),
-    })),
-  );
-
-  return {
-    id: album.id,
-    albumName: album.albumName,
-    albumSpecId: album.albumSpecId,
-    state: album.state,
-    createdAt: album.createdAt,
-    updatedAt: album.updatedAt,
-    assets,
-    spreads,
-    };
   }
 }
