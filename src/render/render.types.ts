@@ -27,6 +27,7 @@ export interface RenderRect {
 
 export interface RenderImageElement {
   type: 'image';
+  fit: 'cover';
   rect: RenderRect;
   assetId: string;
 }
