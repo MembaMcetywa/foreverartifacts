@@ -13,7 +13,11 @@ import {
 export type ValidationSeverity = 'error' | 'warning';
 
 export type ValidationCode =
+  | 'DUPLICATE_TEMPLATE_ID'
   | 'DUPLICATE_ELEMENT_ID'
+  | 'INVALID_IMAGE_SLOT_COUNT'
+  | 'INVALID_IMAGE_SLOT_INDEX'
+  | 'INCOMPLETE_IMAGE_SLOT_MAPPING'
   | 'COLUMN_OUT_OF_RANGE'
   | 'COLUMN_SPAN_OVERFLOW'
   | 'BASELINE_NOT_SNAPPED'
@@ -197,6 +201,16 @@ function validateTemplateShape(template: LayoutTemplate): ValidationIssue[] {
   }
 
   const seen = new Set<string>();
+  const referencedImageSlots = new Set<number>();
+
+  if (!Number.isInteger(template.imageSlots) || template.imageSlots < 0) {
+    issues.push({
+      severity: 'error',
+      code: 'INVALID_IMAGE_SLOT_COUNT',
+      message: 'imageSlots must be a non-negative integer.',
+      templateId: template.id,
+    });
+  }
 
   for (const element of template.elements) {
     if (seen.has(element.id)) {
@@ -209,6 +223,42 @@ function validateTemplateShape(template: LayoutTemplate): ValidationIssue[] {
       });
     }
     seen.add(element.id);
+
+    if (element.type === 'image') {
+      if (
+        !Number.isInteger(element.slotIndex) ||
+        element.slotIndex < 0 ||
+        element.slotIndex >= template.imageSlots
+      ) {
+        issues.push({
+          severity: 'error',
+          code: 'INVALID_IMAGE_SLOT_INDEX',
+          message: `Image slotIndex must be between 0 and ${template.imageSlots - 1}.`,
+          templateId: template.id,
+          elementId: element.id,
+        });
+      } else {
+        referencedImageSlots.add(element.slotIndex);
+      }
+    }
+  }
+
+  if (
+    Number.isInteger(template.imageSlots) &&
+    template.imageSlots >= 0 &&
+    referencedImageSlots.size !== template.imageSlots
+  ) {
+    const missingSlots = Array.from(
+      { length: template.imageSlots },
+      (_, slotIndex) => slotIndex,
+    ).filter((slotIndex) => !referencedImageSlots.has(slotIndex));
+
+    issues.push({
+      severity: 'error',
+      code: 'INCOMPLETE_IMAGE_SLOT_MAPPING',
+      message: `Template does not reference image slots: ${missingSlots.join(', ')}.`,
+      templateId: template.id,
+    });
   }
 
   return issues;
@@ -232,7 +282,19 @@ export function validateLayoutLibrary(
     });
   }
 
+  const seenTemplateIds = new Set<string>();
+
   for (const template of library.templates) {
+    if (seenTemplateIds.has(template.id)) {
+      issues.push({
+        severity: 'error',
+        code: 'DUPLICATE_TEMPLATE_ID',
+        message: `Duplicate template id '${template.id}'.`,
+        templateId: template.id,
+      });
+    }
+    seenTemplateIds.add(template.id);
+
     issues.push(...validateTemplateShape(template));
 
     for (const element of template.elements) {
