@@ -6,6 +6,7 @@ import { useShallow } from 'zustand/react/shallow'
 
 import { useAlbumQuery, useCreateAlbumMutation } from '../../queries/albums'
 import { useAddSpreadMutation } from '../../queries/spreads'
+import { useLayoutTemplatesQuery } from '../../queries/templates'
 import { useCreateAlbumStore } from '../../stores/albumStore'
 
 export const Route = createFileRoute('/create/album')({
@@ -14,43 +15,25 @@ export const Route = createFileRoute('/create/album')({
 
 const ALBUM_SPEC_ID = 'square_210_v1'
 
-type TemplateId = 'single_page_image' | 'balanced_pair' | 'full_spread_image'
-
-interface SpreadTemplateOption {
-  id: TemplateId
-  name: string
-  imageSlots: number
-}
-
-const TEMPLATE_OPTIONS_BY_ID: Record<TemplateId, SpreadTemplateOption> = {
-  single_page_image: {
-    id: 'single_page_image',
-    name: 'Single page image',
-    imageSlots: 1,
-  },
-  balanced_pair: {
-    id: 'balanced_pair',
-    name: 'Balanced pair',
-    imageSlots: 2,
-  },
-  full_spread_image: {
-    id: 'full_spread_image',
-    name: 'Full spread image',
-    imageSlots: 1,
-  },
-}
-
-const TEMPLATE_OPTIONS = Object.values(TEMPLATE_OPTIONS_BY_ID)
-
 function CreateAlbumPage() {
-  const { albumId, album, uploadedAssets, setAlbum, clearAlbum } =
+  const {
+    albumId,
+    album,
+    uploadedAssets,
+    templates,
+    setAlbum,
+    clearAlbum,
+    setTemplates,
+  } =
     useCreateAlbumStore(
       useShallow((state) => ({
         albumId: state.albumId,
         album: state.album,
         uploadedAssets: state.uploadedAssets,
+        templates: state.templates,
         setAlbum: state.setAlbum,
         clearAlbum: state.clearAlbum,
+        setTemplates: state.setTemplates,
       })),
     )
 
@@ -59,20 +42,25 @@ function CreateAlbumPage() {
 
   const albumQuery = useAlbumQuery(albumId)
   const createAlbumMutation = useCreateAlbumMutation()
+  const templatesQuery = useLayoutTemplatesQuery(ALBUM_SPEC_ID)
 
-  const [selectedTemplateId, setSelectedTemplateId] =
-    useState<TemplateId>('single_page_image')
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
+    null,
+  )
 
   const [selectedSlotAssetIds, setSelectedSlotAssetIds] = useState<
     Record<number, string>
   >({})
 
- const selectedTemplate = TEMPLATE_OPTIONS_BY_ID[selectedTemplateId]
+ const selectedTemplate = templates.find(
+   (template) => template.id === selectedTemplateId,
+ )
 
  const selectedSlotCount = Object.keys(selectedSlotAssetIds).length
 
  const canAddSpread =
    Boolean(albumId) &&
+   selectedTemplate !== undefined &&
    selectedSlotCount === selectedTemplate.imageSlots &&
    !addSpreadMutation.isPending
 
@@ -105,7 +93,7 @@ function CreateAlbumPage() {
   async function handleAddSpread(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (!albumId || !canAddSpread) return
+    if (!albumId || !selectedTemplate || !canAddSpread) return
 
     const slots = Array.from(
       { length: selectedTemplate.imageSlots },
@@ -131,11 +119,10 @@ function CreateAlbumPage() {
   const showSpreadReview = Boolean(album && album.spreads.length > 0)
 
   function getTemplateName(templateId: string): string {
-    if (templateId in TEMPLATE_OPTIONS_BY_ID) {
-      return TEMPLATE_OPTIONS_BY_ID[templateId as TemplateId].name
-    }
-
-    return templateId
+    return (
+      templates.find((template) => template.id === templateId)?.name ??
+      templateId
+    )
   }
 
     useEffect(() => {
@@ -143,6 +130,25 @@ function CreateAlbumPage() {
         setAlbum(albumQuery.data)
       }
     }, [albumQuery.data, setAlbum])
+
+    useEffect(() => {
+      if (!templatesQuery.data) return
+
+      setTemplates(templatesQuery.data)
+      setSelectedTemplateId((currentTemplateId) => {
+        const currentTemplateStillExists = templatesQuery.data.some(
+          (template) => template.id === currentTemplateId,
+        )
+
+        if (currentTemplateStillExists) {
+          return currentTemplateId
+        }
+
+        const firstTemplate = templatesQuery.data[0]
+        return firstTemplate.id
+        
+      })
+    }, [setTemplates, templatesQuery.data])
 
 
 
@@ -238,12 +244,24 @@ function CreateAlbumPage() {
               <p className="text-sm text-neutral-500">Album ID: {album.id}</p>
             </div>
 
+            {templatesQuery.isLoading && templates.length === 0 && (
+              <p className="mb-8 text-sm text-neutral-500">
+                Loading layoutsâ€¦
+              </p>
+            )}
+
+            {templatesQuery.isError && templates.length === 0 && (
+              <p className="mb-8 text-sm text-neutral-500">
+                Layouts could not be loaded.
+              </p>
+            )}
+
             <form onSubmit={handleAddSpread}>
               <div className="mb-12">
                 <p className="mb-4 text-sm text-neutral-500">Choose a layout</p>
 
                 <div className="grid gap-3 md:grid-cols-3">
-                  {TEMPLATE_OPTIONS.map((template) => (
+                  {templates.map((template) => (
                     <button
                       key={template.id}
                       type="button"
@@ -275,7 +293,7 @@ function CreateAlbumPage() {
 
                 <div className="grid gap-8 md:grid-cols-2">
                   {Array.from(
-                    { length: selectedTemplate.imageSlots },
+                    { length: selectedTemplate?.imageSlots ?? 0 },
                     (_, slotIndex) => {
                       const selectedAssetId = selectedSlotAssetIds[slotIndex]
 
