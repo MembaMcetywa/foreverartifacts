@@ -13,6 +13,8 @@ export interface RenderDocument {
 
 export interface RenderPage {
   index: number;
+  spreadIndex: number;
+  side: 'left' | 'right';
   elements: RenderElement[];
 }
 
@@ -29,6 +31,11 @@ export interface RenderImageElement {
   type: 'image';
   fit: 'cover';
   rect: RenderRect;
+  coverFrame: {
+    widthMm: number;
+    heightMm: number;
+    offsetXMm: number;
+  };
   assetId: string;
 }
 
