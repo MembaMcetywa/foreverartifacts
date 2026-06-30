@@ -10,7 +10,12 @@ import {
 } from 'pdf-lib';
 
 import { LayoutRegistryService } from '../layout/layout.registry.service';
-import { ImageElementPlacement } from '../layout/layout.templates';
+import { AlbumSpec } from '../layout/album-spec';
+import {
+  ElementPlacement,
+  PageImageElementPlacement,
+  PageSide,
+} from '../layout/layout.templates';
 import { AssetsService } from '../assets/assets.service';
 import { StorageService } from '../storage/storage.service';
 
@@ -67,7 +72,7 @@ export class RenderService {
       for (const element of pageDef.elements) {
         if (element.type !== 'image') continue;
 
-        await this.drawImage(pdf, page, element);
+        await this.drawImage(pdf, page, element, doc.heightMm);
       }
     }
 
@@ -79,29 +84,39 @@ export class RenderService {
       pdf: PDFDocument,
       page: any,
       element: RenderImageElement,
+      pageHeightMm: number,
     ): Promise<void> {
 
     const asset = await this.assetsService.getAsset(element.assetId);
     const downloadUrl = await this.storage.getPresignedDownloadUrl(asset.key);
     const response = await fetch(downloadUrl);
     const imageBytes = new Uint8Array(await response.arrayBuffer());
-    //  const imageBytes = await readFile('assets/test-image.jpg');
 
       const image =
         imageBytes[0] === 0x89
           ? await pdf.embedPng(imageBytes)
           : await pdf.embedJpg(imageBytes);
 
-      const { xPt, yPt, widthPt, heightPt } = rectMmToPt(element.rect);
+      const { xPt, widthPt, heightPt } = rectMmToPt(element.rect);
+      const yPt = mmToPt(
+        pageHeightMm - element.rect.yMm - element.rect.heightMm,
+      );
+      const coverWidthPt = mmToPt(element.coverFrame.widthMm);
+      const coverHeightPt = mmToPt(element.coverFrame.heightMm);
+      const coverOffsetXPt = mmToPt(element.coverFrame.offsetXMm);
 
       const scale = Math.max(
-        widthPt / image.width,
-        heightPt / image.height,
+        coverWidthPt / image.width,
+        coverHeightPt / image.height,
       );
       const renderedWidthPt = image.width * scale;
       const renderedHeightPt = image.height * scale;
-      const renderedXPt = xPt - (renderedWidthPt - widthPt) / 2;
-      const renderedYPt = yPt - (renderedHeightPt - heightPt) / 2;
+      const renderedXPt =
+        xPt -
+        coverOffsetXPt -
+        (renderedWidthPt - coverWidthPt) / 2;
+      const renderedYPt =
+        yPt - (renderedHeightPt - coverHeightPt) / 2;
 
       page.pushOperators(
         pushGraphicsState(),
@@ -134,7 +149,7 @@ export class RenderService {
     const pages: RenderDocument['pages'] = [];
     let pageIndex = 0;
 
-    for (const spread of spreads) {
+    for (const [spreadIndex, spread] of spreads.entries()) {
       const template = library.templates.find(
         (t) => t.id === spread.templateId,
       );
@@ -147,51 +162,90 @@ export class RenderService {
         slotMap.set(slot.slotIndex, slot.assetId);
       }
 
-      for (const side of ['left', 'right'] as const) {
-        const elements: RenderImageElement[] = template.elements
-          .filter(
-            (el): el is ImageElementPlacement =>
-              el.type === 'image' && el.pageSide === side,
-          )
-          .map((el): RenderImageElement => {
-            const assetId = slotMap.get(el.slotIndex);
-            if (!assetId) {
-              throw new Error(
-                `Missing asset for slot ${el.slotIndex} in template '${template.id}'.`,
-              );
-            }
+      const pageElements: Record<PageSide, RenderImageElement[]> = {
+        left: [],
+        right: [],
+      };
 
-            return {
-              type: 'image',
-              fit: el.fit,
-              assetId,
-              rect: {
-                xMm: this.computeX(spec, el),
-                yMm: this.computeY(spec, el),
-                widthMm: this.computeWidth(spec, el),
-                heightMm: el.y.heightMm,
-              },
-            };
+      for (const element of template.elements) {
+        if (element.type !== 'image') continue;
+
+        const assetId = slotMap.get(element.slotIndex);
+        if (!assetId) {
+          throw new Error(
+            `Missing asset for slot ${element.slotIndex} in template '${template.id}'.`,
+          );
+        }
+
+        if (element.placement === 'spread') {
+          const { outerMm } = spec.grid.margins;
+          const sliceWidthMm = spec.page.widthMm - outerMm;
+          const coverWidthMm = sliceWidthMm * 2;
+          const yMm = this.computeY(spec, element);
+
+          pageElements.left.push({
+            type: 'image',
+            fit: element.fit,
+            assetId,
+            rect: {
+              xMm: outerMm,
+              yMm,
+              widthMm: sliceWidthMm,
+              heightMm: element.y.heightMm,
+            },
+            coverFrame: {
+              widthMm: coverWidthMm,
+              heightMm: element.y.heightMm,
+              offsetXMm: 0,
+            },
           });
 
-    if (elements.length === 1) {
-      const element = elements[0];
+          pageElements.right.push({
+            type: 'image',
+            fit: element.fit,
+            assetId,
+            rect: {
+              xMm: 0,
+              yMm,
+              widthMm: sliceWidthMm,
+              heightMm: element.y.heightMm,
+            },
+            coverFrame: {
+              widthMm: coverWidthMm,
+              heightMm: element.y.heightMm,
+              offsetXMm: sliceWidthMm,
+            },
+          });
+          continue;
+        }
 
-      const { margins } = spec.grid;
-      const contentWidth =
-        spec.page.widthMm - margins.innerMm - margins.outerMm;
+        const rect = {
+          xMm: this.computeX(spec, element, element.pageSide),
+          yMm: this.computeY(spec, element),
+          widthMm: this.computeWidth(spec, element),
+          heightMm: element.y.heightMm,
+        };
 
-      element.rect.xMm =
-        margins.innerMm + (contentWidth - element.rect.widthMm) / 2;
-    }
+        pageElements[element.pageSide].push({
+          type: 'image',
+          fit: element.fit,
+          assetId,
+          rect,
+          coverFrame: {
+            widthMm: rect.widthMm,
+            heightMm: rect.heightMm,
+            offsetXMm: 0,
+          },
+        });
+      }
 
-    if (elements.length > 0) {
-      pages.push({
-        index: pageIndex++,
-        elements,
-      });
-    }
-
+      for (const side of ['left', 'right'] as const) {
+        pages.push({
+          index: pageIndex++,
+          spreadIndex,
+          side,
+          elements: pageElements[side],
+        });
       }
     }
 
@@ -202,19 +256,28 @@ export class RenderService {
     };
   }
 
-  private computeX(spec: any, el: any): number {
+  private computeX(
+    spec: AlbumSpec,
+    el: PageImageElementPlacement,
+    side: PageSide,
+  ): number {
     const { columnsPerPage, gutterMm, margins } = spec.grid;
     const contentWidth = spec.page.widthMm - margins.innerMm - margins.outerMm;
+    const leftMargin =
+      side === 'left' ? margins.outerMm : margins.innerMm;
 
     const columnWidth =
       (contentWidth - (columnsPerPage - 1) * gutterMm) / columnsPerPage;
 
     return (
-      margins.innerMm + (el.x.cols.startCol - 1) * (columnWidth + gutterMm)
+      leftMargin + (el.x.cols.startCol - 1) * (columnWidth + gutterMm)
     );
   }
 
-  private computeWidth(spec: any, el: any): number {
+  private computeWidth(
+    spec: AlbumSpec,
+    el: PageImageElementPlacement,
+  ): number {
     const { columnsPerPage, gutterMm, margins } = spec.grid;
     const contentWidth = spec.page.widthMm - margins.innerMm - margins.outerMm;
 
@@ -224,7 +287,7 @@ export class RenderService {
     return el.x.cols.span * columnWidth + (el.x.cols.span - 1) * gutterMm;
   }
 
-  private computeY(spec: any, el: any): number {
+  private computeY(spec: AlbumSpec, el: ElementPlacement): number {
     const { margins } = spec.grid;
     const contentTop = margins.topMm;
     const contentBottom = spec.page.heightMm - margins.bottomMm;

@@ -109,14 +109,17 @@ function validateElement(
   const issues: ValidationIssue[] = [];
   const { grid, page } = album;
 
-  // Column checks
-  issues.push(
-    ...validateColumnSpan(element.x.cols, grid.columnsPerPage).map((issue) => ({
-      ...issue,
-      templateId,
-      elementId: element.id,
-    })),
-  );
+  if (element.placement === 'page') {
+    issues.push(
+      ...validateColumnSpan(element.x.cols, grid.columnsPerPage).map(
+        (issue) => ({
+          ...issue,
+          templateId,
+          elementId: element.id,
+        }),
+      ),
+    );
+  }
 
   // Dimension checks
   if (!isNonNegative(element.y.offsetMm)) {

@@ -9,4 +9,4 @@ node_modules
 .env.development
 /generated/prisma
 
-.db
+*.db

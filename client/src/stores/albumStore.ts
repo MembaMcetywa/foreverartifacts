@@ -1,4 +1,5 @@
 import type { Album } from '#/api/albums'
+import type { LayoutTemplate } from '#/api/templates'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
@@ -13,6 +14,7 @@ interface CreateAlbumStore {
   albumId: string | null
   album: Album | null
   uploadedAssets: UploadedAsset[]
+  templates: LayoutTemplate[]
 
   setAlbumId: (albumId: string) => void
   setAlbum: (album: Album) => void
@@ -21,6 +23,7 @@ interface CreateAlbumStore {
   addUploadedAsset: (asset: UploadedAsset) => void
   removeUploadedAsset: (assetId: string) => void
   clearUploadedAssets: () => void
+  setTemplates: (templates: LayoutTemplate[]) => void
 }
 
 export const useCreateAlbumStore = create<CreateAlbumStore>()(
@@ -29,6 +32,7 @@ export const useCreateAlbumStore = create<CreateAlbumStore>()(
       albumId: null,
       album: null,
       uploadedAssets: [],
+      templates: [],
 
       setAlbumId: (albumId) => {
         set({ albumId })
@@ -64,6 +68,10 @@ export const useCreateAlbumStore = create<CreateAlbumStore>()(
 
       clearUploadedAssets: () => {
         set({ uploadedAssets: [] })
+      },
+
+      setTemplates: (templates) => {
+        set({ templates })
       },
     }),
     {
