@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -50,6 +51,14 @@ export class AlbumsController {
     @Body() spread: AddAlbumSpreadDto,
   ): Promise<AlbumResponseDto> {
     const album = await this.albumsService.addSpread(id, spread);
+    return this.albumPresenter.toDto(album);
+  }
+
+  @Delete(':id/spreads')
+  async clearSpreads(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ): Promise<AlbumResponseDto> {
+    const album = await this.albumsService.clearSpreads(id);
     return this.albumPresenter.toDto(album);
   }
 

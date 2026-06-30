@@ -94,6 +94,16 @@ export class AlbumsService {
     return this.getAlbum(albumId);
   }
 
+  async clearSpreads(albumId: string) {
+    await this.getAlbum(albumId);
+
+    await this.prisma.albumSpread.deleteMany({
+      where: { albumId },
+    });
+
+    return this.getAlbum(albumId);
+  }
+
   async setState(albumId: string, state: AlbumState) {
     await this.getAlbum(albumId);
 
