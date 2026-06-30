@@ -29,14 +29,8 @@ export type VerticalAnchor = 'top' | 'bottom';
  * Placement definition for a single layout element.
  * This is declarative intent, not computed geometry.
  */
-interface BaseElementPlacement {
+interface VerticalElementPlacement {
   id: string;
-  pageSide: PageSide;
-
-  x: {
-    cols: ColumnSpan;
-  };
-
   y: {
     anchor: VerticalAnchor;
     offsetMm: number;
@@ -44,13 +38,33 @@ interface BaseElementPlacement {
   };
 }
 
-export interface ImageElementPlacement extends BaseElementPlacement {
+interface PageElementPlacement extends VerticalElementPlacement {
+  placement: 'page';
+  pageSide: PageSide;
+  x: {
+    cols: ColumnSpan;
+  };
+}
+
+export interface PageImageElementPlacement extends PageElementPlacement {
   type: 'image';
   slotIndex: number;
   fit: ImageFit;
 }
 
-export interface TextElementPlacement extends BaseElementPlacement {
+export interface SpreadImageElementPlacement
+  extends VerticalElementPlacement {
+  placement: 'spread';
+  type: 'image';
+  slotIndex: number;
+  fit: ImageFit;
+}
+
+export type ImageElementPlacement =
+  | PageImageElementPlacement
+  | SpreadImageElementPlacement;
+
+export interface TextElementPlacement extends PageElementPlacement {
   type: Exclude<LayoutElementType, 'image'>;
 }
 
@@ -98,29 +112,11 @@ export const SQUARE_210_LAYOUT_LIBRARY: LayoutLibrary = {
 
       elements: [
         {
-          id: 'image_full_left',
+          id: 'image_full_spread',
+          placement: 'spread',
           type: 'image',
           slotIndex: 0,
           fit: 'cover',
-          pageSide: 'left',
-          x: {
-            cols: { startCol: 1, span: 8 },
-          },
-          y: {
-            anchor: 'top',
-            offsetMm: 0,
-            heightMm: 160,
-          },
-        },
-        {
-          id: 'image_full_right',
-          type: 'image',
-          slotIndex: 0,
-          fit: 'cover',
-          pageSide: 'right',
-          x: {
-            cols: { startCol: 1, span: 8 },
-          },
           y: {
             anchor: 'top',
             offsetMm: 0,
@@ -131,14 +127,15 @@ export const SQUARE_210_LAYOUT_LIBRARY: LayoutLibrary = {
     },
 
     {
-      id: 'single_page_image',
-      name: 'Single Page Image',
-      description: 'A single image centered on one page.',
+      id: 'single_image_left',
+      name: 'Single Image Left',
+      description: 'A single image centered on the left page.',
       imageSlots: 1,
 
       elements: [
         {
           id: 'image_single_left',
+          placement: 'page',
           type: 'image',
           slotIndex: 0,
           fit: 'cover',
@@ -156,40 +153,68 @@ export const SQUARE_210_LAYOUT_LIBRARY: LayoutLibrary = {
     },
 
     {
+      id: 'single_image_right',
+      name: 'Single Image Right',
+      description: 'A single image centered on the right page.',
+      imageSlots: 1,
+
+      elements: [
+        {
+          id: 'image_single_right',
+          placement: 'page',
+          type: 'image',
+          slotIndex: 0,
+          fit: 'cover',
+          pageSide: 'right',
+          x: {
+            cols: { startCol: 2, span: 6 },
+          },
+          y: {
+            anchor: 'top',
+            offsetMm: 0,
+            heightMm: 144,
+          },
+        },
+      ],
+    },
+
+    {
       id: 'balanced_pair',
       name: 'Balanced Pair',
-      description: 'Two images balanced evenly across the page.',
+      description: 'Two images balanced across the full spread.',
       imageSlots: 2,
 
       elements: [
         {
           id: 'image_left',
+          placement: 'page',
           type: 'image',
           slotIndex: 0,
           fit: 'cover',
           pageSide: 'left',
           x: {
-            cols: { startCol: 1, span: 4 },
+            cols: { startCol: 2, span: 6 },
           },
           y: {
             anchor: 'top',
             offsetMm: 0,
-            heightMm: 120,
+            heightMm: 144,
           },
         },
         {
           id: 'image_right',
+          placement: 'page',
           type: 'image',
           slotIndex: 1,
           fit: 'cover',
-          pageSide: 'left',
+          pageSide: 'right',
           x: {
-            cols: { startCol: 5, span: 4 },
+            cols: { startCol: 2, span: 6 },
           },
           y: {
             anchor: 'top',
             offsetMm: 0,
-            heightMm: 120,
+            heightMm: 144,
           },
         },
       ],
