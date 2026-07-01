@@ -21,7 +21,11 @@ function Home() {
     <main className="fa-page">
       <section className="fa-shell fa-hero">
         <header className="fa-site-header">
-          <p className="fa-overline">Forever Artifacts</p>
+          <img
+            className="fa-hero-wordmark"
+            src="/brand/fa-wordmark-stacked.svg"
+            alt="Forever Artifacts"
+          />
           <Link to="/create" className="fa-button-sm">
             Login
           </Link>
@@ -39,7 +43,7 @@ function Home() {
             </p>
 
             <Link to="/create" className="fa-button">
-              Create Your Photo Book
+              Create Your Forever Artifact
             </Link>
           </div>
         </div>
