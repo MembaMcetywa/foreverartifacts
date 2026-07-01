@@ -120,7 +120,7 @@ function Home() {
 
       <section className="fa-closing-section">
         <div className="fa-shell fa-closing-inner">
-          <p className="fa-overline">Begin Your Book</p>
+          <p className="fa-overline">Forever Artifacts</p>
           <h2 className="fa-closing-title">
             Choose the photographs you want to keep close.
           </h2>
