@@ -132,9 +132,16 @@ select {
 
 .fa-site-header {
   display: flex;
+  align-items: flex-end;
   justify-content: space-between;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--fa-color-line-strong);
+}
+
+.fa-hero-wordmark {
+  display: block;
+  width: clamp(7rem, 10vw, 9rem);
+  height: auto;
 }
 
 .fa-hero-statement {
