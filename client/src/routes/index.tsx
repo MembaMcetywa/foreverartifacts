@@ -33,7 +33,7 @@ function Home() {
 
         <div className="fa-hero-statement">
           <h1 className="fa-display">
-            Your photographs deserve a life beyond the screen.
+            Your photographs deserve a life beyond your camera roll.
           </h1>
 
           <div className="fa-hero-support">
