@@ -10,7 +10,7 @@ export const Route = createFileRoute('/')({
       {
         name: 'description',
         content:
-          'Layflat photo books designed to turn digital memories into lasting physical objects.',
+          'Turn meaningful photographs into a carefully designed layflat photo book, made to be held, revisited and kept.',
       },
     ],
   }),
@@ -25,22 +25,21 @@ function Home() {
             <p className="fa-overline">Forever Artifacts</p>
 
             <h1 className="fa-display mt-8 max-w-5xl">
-              Photo books for the images that should not stay on a phone.
+              Your photographs deserve a life beyond the screen.
             </h1>
 
             <p className="fa-body mt-8 max-w-2xl">
-              Forever Artifacts is building a single, carefully defined object:
-              a premium layflat album that gives photographs a permanent place
-              in the home.
+              Turn the photographs that matter into a carefully designed book
+              you can hold, revisit and keep.
             </p>
 
             <div className="fa-hero-actions">
               <Link to="/create" className="fa-button">
-                Open Product Preview
+                Create Your Photo Book
               </Link>
 
               <a href="#product" className="fa-button fa-button-secondary">
-                View Product Direction
+                Discover the Book
               </a>
             </div>
           </div>
@@ -48,13 +47,13 @@ function Home() {
           <aside className="fa-hero-meta fa-kicker-block">
             <div className="fa-editorial-frame">
               <div>
-                <p className="fa-overline">Current Product</p>
+                <p className="fa-overline">The Forever Artifacts Book</p>
                 <p className="mt-4 text-2xl leading-tight">
                   210 x 210 mm hardcover layflat photo book
                 </p>
                 <p className="fa-footnote mt-8 max-w-sm">
-                  Product photography is being prepared. The landing page is
-                  intentionally typographic until the real album shoot is ready.
+                  A considered format designed to feel substantial in the hand
+                  and at home on the shelf.
                 </p>
               </div>
             </div>
@@ -66,25 +65,25 @@ function Home() {
             <span className="fa-stat-value">24</span>
             <p className="fa-overline">Interior Pages</p>
             <p className="fa-footnote mt-4">
-              Twelve layflat spreads, with covers treated separately.
+              Twelve spreads, with the hardcover treated separately.
             </p>
           </div>
 
           <div className="fa-stat">
-            <span className="fa-stat-value">1</span>
-            <p className="fa-overline">MVP Format</p>
+            <span className="fa-stat-value">210</span>
+            <p className="fa-overline">Millimetres Square</p>
             <p className="fa-footnote mt-4">
-              A single size keeps production, quality control, and fulfillment
-              disciplined.
+              Large enough for photographs to hold attention, compact enough to
+              live with.
             </p>
           </div>
 
           <div className="fa-stat">
-            <span className="fa-stat-value">300</span>
-            <p className="fa-overline">Print Target</p>
+            <span className="fa-stat-value">12</span>
+            <p className="fa-overline">Layflat Spreads</p>
             <p className="fa-footnote mt-4">
-              The rendering pipeline is being shaped around premium print
-              quality constraints.
+              Pages open flat so photographs can move naturally across the
+              centre.
             </p>
           </div>
         </div>
@@ -95,44 +94,49 @@ function Home() {
 
         <div className="fa-grid-12 pt-6">
           <div className="col-span-12 md:col-span-4">
-            <p className="fa-overline">Product Direction</p>
+            <p className="fa-overline">The Forever Artifacts Book</p>
           </div>
 
           <div className="col-span-12 md:col-span-8">
             <h2 className="fa-section-title max-w-3xl">
-              The product is intentionally narrow in scope so the object can be
-              precise.
+              Made to give your photographs a permanent place in your life.
             </h2>
+            <p className="fa-body mt-8 max-w-2xl">
+              A 210 x 210 mm hardcover photo book with 24 interior pages and
+              hand crafted layflat binding. Every detail is designed around the photographs:
+              balanced layouts, consistent margins and enough space for each
+              image to breathe.
+            </p>
           </div>
         </div>
 
         <div className="fa-grid-12 mt-12">
           <div className="col-span-12 md:col-span-4">
             <div className="fa-editorial-card">
-              <p className="fa-overline">Format</p>
+              <p className="fa-overline">Considered Format</p>
               <p className="mt-6 text-3xl leading-tight">
-                One square format. One premium paper direction. One layflat
-                experience.
+                One square format, chosen to feel substantial without becoming
+                difficult to live with.
               </p>
             </div>
           </div>
 
           <div className="col-span-12 md:col-span-4">
             <div className="fa-editorial-card">
-              <p className="fa-overline">Aesthetic</p>
+              <p className="fa-overline">Quiet Composition</p>
               <p className="mt-6 text-3xl leading-tight">
-                Consistent margins, quiet pacing, and space that lets
-                photographs breathe.
+                Consistent margins bring structure to every spread while giving
+                each photograph room to breathe.
               </p>
             </div>
           </div>
 
           <div className="col-span-12 md:col-span-4">
             <div className="fa-editorial-card">
-              <p className="fa-overline">Intent</p>
+              <p className="fa-overline">Layflat Binding</p>
               <p className="mt-6 text-3xl leading-tight">
-                A home object first. Software exists to serve the printed
-                result.
+                Pages open flat so photographs can cross the centre without
+                disappearing into the binding.
               </p>
             </div>
           </div>
@@ -144,47 +148,34 @@ function Home() {
 
         <div className="fa-grid-12 pt-6">
           <div className="col-span-12 md:col-span-5">
-            <p className="fa-overline">Design System</p>
+            <p className="fa-overline">A Physical Life for Digital Memories</p>
             <h2 className="fa-section-title mt-8 max-w-xl">
-              The brand should feel editorial, physical, and measured.
+              The photographs we value most are often the ones we see the least.
             </h2>
           </div>
 
           <div className="col-span-12 md:col-span-7">
             <div className="fa-detail-list">
               <div className="fa-detail-row">
-                <p className="fa-overline">Typography</p>
+                <p className="fa-overline">Out of Storage</p>
                 <p className="fa-body">
-                  Neutral grotesk typography, large headline scale, controlled
-                  spacing, and no decorative treatment competing with the
-                  imagery.
+                  They disappear into camera rolls, message threads and folders
+                  we mean to return to.
                 </p>
               </div>
 
               <div className="fa-detail-row">
-                <p className="fa-overline">Colour</p>
+                <p className="fa-overline">Into the Home</p>
                 <p className="fa-body">
-                  Warm paper tones, black structural elements, muted greys, and
-                  no gradients. Contrast should come from layout and tone rather
-                  than effects.
+                  Forever Artifacts brings them back into everyday life, where
+                  they can be held, shared and encountered again.
                 </p>
               </div>
 
               <div className="fa-detail-row">
-                <p className="fa-overline">Layout</p>
-                <p className="fa-body">
-                  Swiss grid discipline, thin rules, flat planes, and strict
-                  alignment. White space should feel purposeful rather than
-                  empty.
-                </p>
-              </div>
-
-              <div className="fa-detail-row">
-                <p className="fa-overline">Photography</p>
-                <p className="fa-body">
-                  Real album photography will eventually carry the emotional
-                  weight. Until then, the site stays restrained and does not
-                  fake the product.
+                <p className="fa-overline">Made Present</p>
+                <p className="text-3xl leading-tight">
+                  Not simply stored. Made present.
                 </p>
               </div>
             </div>
@@ -197,20 +188,24 @@ function Home() {
 
         <div className="fa-grid-12 pt-6">
           <div className="col-span-12 md:col-span-4">
-            <p className="fa-overline">Current State</p>
+            <p className="fa-overline">Begin Your Book</p>
           </div>
 
           <div className="col-span-12 md:col-span-8">
             <h2 className="fa-section-title max-w-3xl">
-              The backend and render pipeline are being hardened first, because
-              the print artifact is the core product.
+              Choose the photographs you want to keep close.
             </h2>
 
             <p className="fa-body mt-8 max-w-2xl">
-              The public site can already communicate the product direction
-              cleanly while the ordering experience, authentication, and final
-              marketing photography are still in development.
+              Arrange them into a lasting object, made for the shelf, the table
+              and the hands of the people who matter.
             </p>
+
+            <div className="fa-hero-actions">
+              <Link to="/create" className="fa-button">
+                Create Your Photo Book
+              </Link>
+            </div>
           </div>
         </div>
       </section>
