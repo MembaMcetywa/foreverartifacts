@@ -1,5 +1,21 @@
 
+@import "@fontsource-variable/space-grotesk";
 @import "tailwindcss";
+
+:root {
+  --fa-color-ink: #111111;
+  --fa-color-paper: #f5f1e8;
+  --fa-color-surface: #fffdfa;
+  --fa-color-line: rgba(17, 17, 17, 0.14);
+  --fa-color-line-strong: rgba(17, 17, 17, 0.9);
+  --fa-color-muted: rgba(17, 17, 17, 0.64);
+  --fa-color-soft: rgba(17, 17, 17, 0.08);
+  --fa-font-sans: "Space Grotesk Variable", "Helvetica Neue", Helvetica, Arial,
+    sans-serif;
+  --fa-max-width: 1440px;
+  --fa-gutter: clamp(1.25rem, 2vw, 2rem);
+  --fa-section-gap: clamp(4rem, 8vw, 8rem);
+}
 
 * {
   box-sizing: border-box;
@@ -11,7 +27,216 @@ body,
   min-height: 100%;
 }
 
+html {
+  background: var(--fa-color-paper);
+}
+
 body {
   margin: 0;
+  background: var(--fa-color-paper);
+  color: var(--fa-color-ink);
+  font-family: var(--fa-font-sans);
+  text-rendering: geometricPrecision;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.fa-page {
+  min-height: 100vh;
+  background: var(--fa-color-paper);
+  color: var(--fa-color-ink);
+}
+
+.fa-shell {
+  margin: 0 auto;
+  max-width: var(--fa-max-width);
+  padding-inline: var(--fa-gutter);
+}
+
+.fa-rule {
+  border-top: 1px solid var(--fa-color-line);
+}
+
+.fa-rule-strong {
+  border-top: 1px solid var(--fa-color-line-strong);
+}
+
+.fa-overline {
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.fa-display {
+  font-size: clamp(3.5rem, 9vw, 8rem);
+  font-weight: 400;
+  line-height: 0.94;
+}
+
+.fa-section-title {
+  font-size: clamp(1.6rem, 2.2vw, 2.4rem);
+  font-weight: 400;
+  line-height: 1.05;
+}
+
+.fa-body {
+  font-size: clamp(1rem, 1.15vw, 1.15rem);
+  line-height: 1.7;
+  color: var(--fa-color-muted);
+}
+
+.fa-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.25rem;
+  padding: 0 1.25rem;
+  border: 1px solid var(--fa-color-ink);
+  background: var(--fa-color-ink);
+  color: var(--fa-color-surface);
+  font-size: 0.76rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.fa-button-secondary {
+  background: transparent;
+  color: var(--fa-color-ink);
+}
+
+.fa-grid-12 {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: clamp(0.75rem, 1.4vw, 1.5rem);
+}
+
+.fa-kicker-block {
+  padding-top: 1rem;
+}
+
+.fa-hero {
+  padding-block: 1.5rem var(--fa-section-gap);
+}
+
+.fa-hero-copy {
+  grid-column: 1 / span 7;
+}
+
+.fa-hero-meta {
+  grid-column: 9 / span 4;
+  align-self: end;
+}
+
+.fa-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.875rem;
+  margin-top: 2rem;
+}
+
+.fa-stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--fa-color-line);
+  margin-top: 3rem;
+}
+
+.fa-stat {
+  min-height: 8.5rem;
+  padding: 1.5rem;
+  background: var(--fa-color-surface);
+}
+
+.fa-stat-value {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.fa-section {
+  padding-block: var(--fa-section-gap);
+}
+
+.fa-editorial-card {
+  min-height: 18rem;
+  padding: 1.5rem;
+  border: 1px solid var(--fa-color-line);
+  background: var(--fa-color-surface);
+}
+
+.fa-editorial-frame {
+  display: flex;
+  align-items: end;
+  min-height: 24rem;
+  padding: 1.5rem;
+  border: 1px solid var(--fa-color-line);
+  background:
+    linear-gradient(to bottom, transparent 0, transparent calc(100% - 4rem), var(--fa-color-soft) calc(100% - 4rem), var(--fa-color-soft) 100%),
+    var(--fa-color-surface);
+}
+
+.fa-detail-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.fa-detail-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--fa-color-line);
+}
+
+.fa-footnote {
+  font-size: 0.86rem;
+  line-height: 1.6;
+  color: var(--fa-color-muted);
+}
+
+@media (max-width: 960px) {
+  .fa-hero-copy,
+  .fa-hero-meta,
+  .fa-grid-12 > * {
+    grid-column: 1 / -1;
+  }
+
+  .fa-display {
+    font-size: clamp(3rem, 16vw, 5rem);
+  }
+
+  .fa-stat-row {
+    grid-template-columns: 1fr;
+  }
+
+  .fa-detail-row {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .fa-hero {
+    padding-top: 1rem;
+  }
+
+  .fa-editorial-frame,
+  .fa-editorial-card {
+    min-height: auto;
+  }
 }
 
