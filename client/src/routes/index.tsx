@@ -26,7 +26,7 @@ function Home() {
             src="/brand/fa-wordmark-stacked.svg"
             alt="Forever Artifacts"
           />
-          <Link to="/create" className="fa-button-sm">
+          <Link to={'#' as '/'} className="fa-button-sm">
             Login
           </Link>
         </header>
@@ -42,8 +42,8 @@ function Home() {
               hand crafted book you can hold, revisit and keep.
             </p>
 
-            <Link to="/create" className="fa-button">
-              Create Your Forever Artifact
+            <Link to={'#product' as '/'} className="fa-button">
+              Create Your Photo Book
             </Link>
           </div>
         </div>
@@ -124,8 +124,8 @@ function Home() {
           <h2 className="fa-closing-title">
             Choose the photographs you want to keep close.
           </h2>
-          <Link to="/create" className="fa-button">
-            Create Your Photo Book
+          <Link to={'#' as '/'} className="fa-button">
+            Create Your Artifact
           </Link>
         </div>
       </section>
