@@ -5,7 +5,7 @@ export const Route = createFileRoute('/')({
   head: () => ({
     meta: [
       {
-        title: 'Forever Artifacts',
+        title: 'Forever Artifacts | Photo books for the photographs that matter',
       },
       {
         name: 'description',
@@ -20,193 +20,109 @@ function Home() {
   return (
     <main className="fa-page">
       <section className="fa-shell fa-hero">
-        <div className="fa-grid-12 mt-2">
-          <div className="fa-hero-copy fa-kicker-block">
-            <p className="fa-overline">Forever Artifacts</p>
+        <header className="fa-site-header">
+          <p className="fa-overline">Forever Artifacts</p>
+          <Link to="/create" className="fa-button-sm">
+            Login
+          </Link>
+        </header>
 
-            <h1 className="fa-display mt-8 max-w-5xl">
-              Your photographs deserve a life beyond the screen.
-            </h1>
+        <div className="fa-hero-statement">
+          <h1 className="fa-display">
+            Your photographs deserve a life beyond the screen.
+          </h1>
 
-            <p className="fa-body mt-8 max-w-2xl">
-              Turn the photographs that matter into a carefully designed book
-              you can hold, revisit and keep.
+          <div className="fa-hero-support">
+            <p className="fa-body">
+              Turn the photographs that matter into a carefully designed and
+              hand crafted book you can hold, revisit and keep.
             </p>
 
-            <div className="fa-hero-actions">
-              <Link to="/create" className="fa-button">
-                Create Your Photo Book
-              </Link>
-
-              <a href="#product" className="fa-button fa-button-secondary">
-                Discover the Book
-              </a>
-            </div>
-          </div>
-
-          <aside className="fa-hero-meta fa-kicker-block">
-            <div className="fa-editorial-frame">
-              <div>
-                <p className="fa-overline">The Forever Artifacts Book</p>
-                <p className="mt-4 text-2xl leading-tight">
-                  210 x 210 mm hardcover layflat photo book
-                </p>
-                <p className="fa-footnote mt-8 max-w-sm">
-                  A considered format designed to feel substantial in the hand
-                  and at home on the shelf.
-                </p>
-              </div>
-            </div>
-          </aside>
-        </div>
-
-        <div className="fa-stat-row">
-          <div className="fa-stat">
-            <span className="fa-stat-value">24</span>
-            <p className="fa-overline">Interior Pages</p>
-            <p className="fa-footnote mt-4">
-              Twelve spreads, with the hardcover treated separately.
-            </p>
-          </div>
-
-          <div className="fa-stat">
-            <span className="fa-stat-value">210</span>
-            <p className="fa-overline">Millimetres Square</p>
-            <p className="fa-footnote mt-4">
-              Large enough for photographs to hold attention, compact enough to
-              live with.
-            </p>
-          </div>
-
-          <div className="fa-stat">
-            <span className="fa-stat-value">12</span>
-            <p className="fa-overline">Layflat Spreads</p>
-            <p className="fa-footnote mt-4">
-              Pages open flat so photographs can move naturally across the
-              centre.
-            </p>
+            <Link to="/create" className="fa-button">
+              Create Your Photo Book
+            </Link>
           </div>
         </div>
       </section>
 
-      <section id="product" className="fa-shell fa-section">
-        <div className="fa-rule" />
-
-        <div className="fa-grid-12 pt-6">
-          <div className="col-span-12 md:col-span-4">
+      <section id="product" className="fa-product-band">
+        <div className="fa-shell fa-product-inner">
+          <div className="fa-product-intro">
             <p className="fa-overline">The Forever Artifacts Book</p>
+            <p className="fa-format-mark">210 x 210</p>
+            <p className="fa-format-unit">Millimetres</p>
           </div>
 
-          <div className="col-span-12 md:col-span-8">
-            <h2 className="fa-section-title max-w-3xl">
-              Made to give your photographs a permanent place in your life.
-            </h2>
-            <p className="fa-body mt-8 max-w-2xl">
-              A 210 x 210 mm hardcover photo book with 24 interior pages and
-              hand crafted layflat binding. Every detail is designed around the photographs:
-              balanced layouts, consistent margins and enough space for each
-              image to breathe.
-            </p>
-          </div>
-        </div>
-
-        <div className="fa-grid-12 mt-12">
-          <div className="col-span-12 md:col-span-4">
-            <div className="fa-editorial-card">
-              <p className="fa-overline">Considered Format</p>
-              <p className="mt-6 text-3xl leading-tight">
-                One square format, chosen to feel substantial without becoming
-                difficult to live with.
-              </p>
+          <div className="fa-spread-study">
+            <div
+              className="fa-spread-diagram"
+              role="img"
+              aria-label="Diagram of an open square layflat photo-book spread"
+            >
+              <div className="fa-spread-page" />
+              <div className="fa-spread-page" />
             </div>
-          </div>
 
-          <div className="col-span-12 md:col-span-4">
-            <div className="fa-editorial-card">
-              <p className="fa-overline">Quiet Composition</p>
-              <p className="mt-6 text-3xl leading-tight">
-                Consistent margins bring structure to every spread while giving
-                each photograph room to breathe.
-              </p>
-            </div>
-          </div>
-
-          <div className="col-span-12 md:col-span-4">
-            <div className="fa-editorial-card">
-              <p className="fa-overline">Layflat Binding</p>
-              <p className="mt-6 text-3xl leading-tight">
-                Pages open flat so photographs can cross the centre without
-                disappearing into the binding.
-              </p>
+            <div className="fa-spec-line">
+              <span>Hardcover</span>
+              <span>24 interior pages</span>
+              <span>12 hand-crafted layflat spreads</span>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="fa-shell fa-section">
-        <div className="fa-rule" />
+      <section className="fa-shell fa-statement-section">
+        <p className="fa-overline">A Physical Life for Digital Memories</p>
 
-        <div className="fa-grid-12 pt-6">
-          <div className="col-span-12 md:col-span-5">
-            <p className="fa-overline">A Physical Life for Digital Memories</p>
-            <h2 className="fa-section-title mt-8 max-w-xl">
-              The photographs we value most are often the ones we see the least.
-            </h2>
-          </div>
+        <h2 className="fa-statement">
+          The photographs we value most are often the ones we see the least.
+        </h2>
 
-          <div className="col-span-12 md:col-span-7">
-            <div className="fa-detail-list">
-              <div className="fa-detail-row">
-                <p className="fa-overline">Out of Storage</p>
-                <p className="fa-body">
-                  They disappear into camera rolls, message threads and folders
-                  we mean to return to.
-                </p>
-              </div>
-
-              <div className="fa-detail-row">
-                <p className="fa-overline">Into the Home</p>
-                <p className="fa-body">
-                  Forever Artifacts brings them back into everyday life, where
-                  they can be held, shared and encountered again.
-                </p>
-              </div>
-
-              <div className="fa-detail-row">
-                <p className="fa-overline">Made Present</p>
-                <p className="text-3xl leading-tight">
-                  Not simply stored. Made present.
-                </p>
-              </div>
-            </div>
-          </div>
+        <div className="fa-statement-foot">
+          <p className="fa-body">
+            Forever Artifacts brings them back into everyday life, where they
+            can be held, shared and encountered again.
+          </p>
         </div>
       </section>
 
-      <section className="fa-shell fa-section">
-        <div className="fa-rule" />
+      <section className="fa-shell fa-principles-section">
+        <div className="fa-rule-strong" />
+        <p className="fa-overline fa-principles-label">
+          Designed with restraint
+        </p>
 
-        <div className="fa-grid-12 pt-6">
-          <div className="col-span-12 md:col-span-4">
-            <p className="fa-overline">Begin Your Book</p>
-          </div>
+        <div className="fa-principles">
+          <article className="fa-principle">
+            <p className="fa-principle-number">01</p>
+            <h3>Considered format</h3>
+            <p>Substantial in the hand. Easy to live with.</p>
+          </article>
 
-          <div className="col-span-12 md:col-span-8">
-            <h2 className="fa-section-title max-w-3xl">
-              Choose the photographs you want to keep close.
-            </h2>
+          <article className="fa-principle">
+            <p className="fa-principle-number">02</p>
+            <h3>Quiet composition</h3>
+            <p>Consistent margins give every photograph room to breathe.</p>
+          </article>
 
-            <p className="fa-body mt-8 max-w-2xl">
-              Arrange them into a lasting object, made for the shelf, the table
-              and the hands of the people who matter.
-            </p>
+          <article className="fa-principle">
+            <p className="fa-principle-number">03</p>
+            <h3>Layflat binding</h3>
+            <p>Images cross the centre without disappearing into the spine.</p>
+          </article>
+        </div>
+      </section>
 
-            <div className="fa-hero-actions">
-              <Link to="/create" className="fa-button">
-                Create Your Photo Book
-              </Link>
-            </div>
-          </div>
+      <section className="fa-closing-section">
+        <div className="fa-shell fa-closing-inner">
+          <p className="fa-overline">Begin Your Book</p>
+          <h2 className="fa-closing-title">
+            Choose the photographs you want to keep close.
+          </h2>
+          <Link to="/create" className="fa-button">
+            Create Your Photo Book
+          </Link>
         </div>
       </section>
     </main>
