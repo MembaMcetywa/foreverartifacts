@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 190" role="img" aria-labelledby="title">
+  <title id="title">Forever Artifacts</title>
+  <g fill="#111111" font-family="Space Grotesk, Helvetica Neue, Arial, sans-serif" font-size="76" font-weight="650" letter-spacing="-3">
+    <text x="0" y="72">FOREVER</text>
+    <text x="0" y="148">ARTIFACTS</text>
+  </g>
+  <path d="M0 177H600" stroke="#111111" stroke-width="4"/>
+</svg>
