@@ -1,81 +1,43 @@
-# Forever Arteffects Client
+# Forever Artifacts Client
 
 ## Purpose
 
-The client is a calm, guided interface for creating physical photo albums.
+Forever Artifacts helps people preserve meaningful photographs in carefully designed physical photo books.
 
-It is not a design tool.
-It is not a canvas editor.
-It is not responsible for print geometry or PDF generation.
+The client is a calm, guided experience for moving photographs beyond the camera roll and into something lasting.
 
-The backend owns:
-- layout templates
-- album specifications
-- geometry
-- validation
-- rendering
-- storage
-
-The client owns:
-- photo selection
-- album flow
-- template selection
-- slot assignment
-- preview
-- render trigger
-- final review
+It is not a design tool or freeform editor. It removes unnecessary decisions while giving each photograph space and consideration.
 
 ---
 
 ## Experience Principle
 
-The interface should always make the next meaningful action obvious.
+The next meaningful action should always be clear.
 
-At any moment, the user should understand:
+The experience should feel:
 
-> What do I need to do right now?
-
-The client should reduce noise, not increase control surface.
-
----
-
-## Product Feel
-
-The application should feel:
-- light
 - quiet
 - spacious
-- neutral
 - deliberate
-- calm
-
-It should avoid:
-- dashboards
-- dense controls
-- decorative UI
-- gamification
-- Canva-like editing
-- unnecessary customization
+- personal
+- easy to use
 
 ---
 
-## Initial Flow
+## Album Flow
 
-1. Add photos
-2. Create album
-3. Build spreads
-4. Review
-5. Render/download
+1. Add photographs
+2. Create an album
+3. Arrange the spreads
+4. Review the book
+5. Create the final artifact
 
-The user starts with photos, not settings.
+Users begin with their photographs, not settings.
 
 ---
 
-## Technical Constraints
+## Responsibilities
 
-- No client-side PDF generation
-- No client-side print geometry
-- No freeform canvas layout
-- No arbitrary dragging/resizing
-- Use backend templates as source of truth
-- Use TanStack Query for server state
+The client owns the experience of selecting, arranging, and reviewing photographs.
+
+The backend owns album specifications, templates, validation, storage, and final PDF rendering.
