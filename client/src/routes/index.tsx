@@ -101,19 +101,19 @@ function Home() {
           <article className="fa-principle">
             <p className="fa-principle-number">01</p>
             <h3>Considered format</h3>
-            <p>Substantial in the hand. Easy to live with.</p>
+            <p>A square format, made to be held and kept close.</p>
           </article>
 
           <article className="fa-principle">
             <p className="fa-principle-number">02</p>
             <h3>Quiet composition</h3>
-            <p>Consistent margins give every photograph room to breathe.</p>
+            <p>Measured margins let every photograph breathe.</p>
           </article>
 
           <article className="fa-principle">
             <p className="fa-principle-number">03</p>
             <h3>Layflat binding</h3>
-            <p>Images cross the centre without disappearing into the spine.</p>
+            <p>Opens flat, leaving the photograph uninterrupted.</p>
           </article>
         </div>
       </section>
