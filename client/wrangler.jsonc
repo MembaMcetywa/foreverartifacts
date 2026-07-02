@@ -4,6 +4,12 @@
   "compatibility_date": "2026-07-01",
   "compatibility_flags": ["nodejs_compat"],
   "main": "@tanstack/react-start/server-entry",
+  "routes": [
+    {
+      "pattern": "foreverartifacts.co.za",
+      "custom_domain": true
+    }
+  ],
   "observability": {
     "enabled": true
   }
