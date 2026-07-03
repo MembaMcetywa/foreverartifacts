@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
+  DeleteObjectCommand,
+  HeadObjectCommand,
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
@@ -51,5 +53,63 @@ this.client = new S3Client({
     return getSignedUrl(this.client, command, {
       expiresIn: expiresInSeconds,
     });
+  }
+
+  async getObjectMetadata(key: string): Promise<{
+    contentLength: number;
+    contentType?: string;
+    eTag?: string;
+  }> {
+    const response = await this.client.send(
+      new HeadObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+      }),
+    );
+
+    return {
+      contentLength: response.ContentLength ?? 0,
+      contentType: response.ContentType,
+      eTag: response.ETag,
+    };
+  }
+
+  async getObjectBuffer(key: string): Promise<Buffer> {
+    const response = await this.client.send(
+      new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+      }),
+    );
+
+    if (!response.Body) {
+      throw new Error(`Storage object '${key}' has no body.`);
+    }
+
+    return Buffer.from(await response.Body.transformToByteArray());
+  }
+
+  async putObject(
+    key: string,
+    body: Buffer,
+    contentType: string,
+  ): Promise<void> {
+    await this.client.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Body: body,
+        ContentType: contentType,
+      }),
+    );
+  }
+
+  async deleteObject(key: string): Promise<void> {
+    await this.client.send(
+      new DeleteObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+      }),
+    );
   }
 }
