@@ -54,7 +54,7 @@ export interface AlbumResponseDto {
   assets: {
     assetId: string;
     key: string;
-    contentType: string;
+    sourceContentType: string;
     order: number;
     previewUrl: string;
   }[];
@@ -69,7 +69,7 @@ export interface AlbumResponseDto {
       asset: {
         id: string;
         key: string;
-        contentType: string;
+        sourceContentType: string;
         previewUrl: string;
       };
     }[];

@@ -88,7 +88,14 @@ export class RenderService {
     ): Promise<void> {
 
     const asset = await this.assetsService.getAsset(element.assetId);
-    const downloadUrl = await this.storage.getPresignedDownloadUrl(asset.key);
+
+    if (asset.status !== 'ready') {
+      throw new Error(`Asset '${asset.id}' is not ready to render.`);
+    }
+
+    const downloadUrl = await this.storage.getPresignedDownloadUrl(
+      asset.printKey ?? asset.key,
+    );
     const response = await fetch(downloadUrl);
     const imageBytes = new Uint8Array(await response.arrayBuffer());
 

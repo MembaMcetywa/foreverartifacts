@@ -7,10 +7,18 @@ datasource db {
 }
 
 model Asset {
-  id          String       @id
-  key         String       @unique
-  contentType String
-  createdAt   DateTime     @default(now())
+  id                  String       @id
+  key                 String       @unique
+  contentType         String
+  status              String       @default("pending")
+  printKey            String?      @unique
+  previewKey          String?      @unique
+  width               Int?
+  height              Int?
+  fileSize            Int?
+  failureReason       String?
+  processingStartedAt DateTime?
+  createdAt           DateTime     @default(now())
 
   slots       AlbumSlot[]
   albumAssets AlbumAsset[]

@@ -1,19 +1,17 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ChangeEvent, SubmitEvent } from 'react'
 import { useState } from 'react'
+import { useUploadAssetMutation } from '../../queries/assets'
 import { useCreateAlbumStore } from '../../stores/albumStore'
+import {
+  getImageContentType,
+  IMAGE_INPUT_ACCEPT,
+  selectImageFiles,
+} from '../../utils/image-upload-policy'
 
 export const Route = createFileRoute('/create/')({
   component: CreatePage,
 })
-
-interface UploadUrlResponse {
-  assetId: string
-  uploadUrl: string
-}
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000'
 
 function CreatePage() {
   const [selectedImages, setSelectedImages] = useState<File[]>([])
@@ -24,11 +22,16 @@ function CreatePage() {
   )
 
   const navigate = useNavigate()
+  const uploadAssetMutation = useUploadAssetMutation()
 
   function handleImageSelection(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? [])
 
-    setSelectedImages((currentImages) => [...currentImages, ...files])
+    setSelectedImages((currentImages) => {
+      const { accepted } = selectImageFiles(currentImages, files)
+
+      return [...currentImages, ...accepted]
+    })
 
     event.target.value = ''
   }
@@ -42,32 +45,21 @@ function CreatePage() {
 
     try {
       for (const image of selectedImages) {
-        const response = await fetch(`${API_BASE_URL}/assets/upload-url`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            filename: image.name,
-            contentType: image.type,
-          }),
-        })
-        // TODO: Add a toast message here
-        if (!response.ok) throw new Error('Failed to create upload URL.')
+        const contentType = getImageContentType(image)
 
-        const { assetId, uploadUrl } =
-          (await response.json()) as UploadUrlResponse
+        if (!contentType) {
+          throw new Error(`${image.name} is not a supported image format.`)
+        }
 
-        const uploadResponse = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': image.type },
-          body: image,
+        const uploadedAsset = await uploadAssetMutation.mutateAsync({
+          file: image,
+          contentType,
         })
-        // TODO: Add a toast message here
-        if (!uploadResponse.ok) throw new Error('Failed to upload image.')
 
         addUploadedAsset({
-          assetId,
-          filename: image.name,
-          previewUrl: URL.createObjectURL(image),
+          assetId: uploadedAsset.assetId,
+          filename: uploadedAsset.filename,
+          previewUrl: uploadedAsset.previewUrl,
         })
       }
 
@@ -95,7 +87,7 @@ function CreatePage() {
           <label className="mb-8 flex h-56 cursor-pointer items-center justify-center border border-neutral-300 bg-white">
             <input
               type="file"
-              accept="image/jpeg,image/png"
+              accept={IMAGE_INPUT_ACCEPT}
               multiple
               className="hidden"
               onChange={handleImageSelection}
