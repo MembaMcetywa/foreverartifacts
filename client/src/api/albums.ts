@@ -6,7 +6,7 @@ export interface CreateAlbumInput {
 export interface AlbumAsset {
   assetId: string
   key: string
-  contentType: string
+  sourceContentType: string
   order: number
   previewUrl: string
 }
@@ -14,7 +14,7 @@ export interface AlbumAsset {
 export interface AlbumSpreadSlotAsset {
   id: string
   key: string
-  contentType: string
+  sourceContentType: string
   previewUrl: string
 }
 
