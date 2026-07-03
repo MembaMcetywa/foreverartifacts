@@ -15,10 +15,10 @@ export class AlbumPresenter {
       album.assets.map(async (albumAsset) => ({
         assetId: albumAsset.asset.id,
         key: albumAsset.asset.key,
-        contentType: albumAsset.asset.contentType,
+        sourceContentType: albumAsset.asset.contentType,
         order: albumAsset.order,
         previewUrl: await this.storageService.getPresignedDownloadUrl(
-          albumAsset.asset.key,
+          albumAsset.asset.previewKey ?? albumAsset.asset.key,
         ),
       })),
     );
@@ -36,9 +36,9 @@ export class AlbumPresenter {
             asset: {
               id: slot.asset.id,
               key: slot.asset.key,
-              contentType: slot.asset.contentType,
+              sourceContentType: slot.asset.contentType,
               previewUrl: await this.storageService.getPresignedDownloadUrl(
-                slot.asset.key,
+                slot.asset.previewKey ?? slot.asset.key,
               ),
             },
           })),
