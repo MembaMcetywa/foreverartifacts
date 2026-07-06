@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 
-import { createAlbum, getAlbum } from '../api/albums'
+import { createAlbum, getAlbum, listAlbums } from '../api/albums'
 import type {Album, CreateAlbumInput} from '../api/albums';
 
 export function useCreateAlbumMutation() {
@@ -21,5 +21,12 @@ export function useAlbumQuery(albumId: string | null) {
       return getAlbum(albumId)
     },
     enabled: Boolean(albumId),
+  })
+}
+
+export function useAlbumsQuery() {
+  return useQuery<Album[], Error>({
+    queryKey: ['albums'],
+    queryFn: listAlbums,
   })
 }

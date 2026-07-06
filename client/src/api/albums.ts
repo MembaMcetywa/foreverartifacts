@@ -69,3 +69,13 @@ export async function getAlbum(albumId: string): Promise<Album> {
 
   return (await response.json()) as Album
 }
+
+export async function listAlbums(): Promise<Album[]> {
+  const response = await fetch(`${API_BASE_URL}/albums`)
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch albums.')
+  }
+
+  return (await response.json()) as Album[]
+}
