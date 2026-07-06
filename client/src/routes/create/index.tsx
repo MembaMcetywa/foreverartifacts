@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ChangeEvent, SubmitEvent } from 'react'
 import { useState } from 'react'
+import { useAlbumsQuery } from '../../queries/albums'
 import { useUploadAssetMutation } from '../../queries/assets'
 import { useCreateAlbumStore } from '../../stores/albumStore'
 import {
@@ -20,9 +21,20 @@ function CreatePage() {
   const addUploadedAsset = useCreateAlbumStore(
     (state) => state.addUploadedAsset,
   )
+  const clearAlbum = useCreateAlbumStore((state) => state.clearAlbum)
+  const clearUploadedAssets = useCreateAlbumStore(
+    (state) => state.clearUploadedAssets,
+  )
+  const setAlbumId = useCreateAlbumStore((state) => state.setAlbumId)
 
   const navigate = useNavigate()
+  const albumsQuery = useAlbumsQuery()
   const uploadAssetMutation = useUploadAssetMutation()
+
+  function handleOpenAlbum(albumId: string) {
+    setAlbumId(albumId)
+    navigate({ to: '/create/album' })
+  }
 
   function handleImageSelection(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? [])
@@ -41,6 +53,8 @@ function CreatePage() {
 
     if (selectedImages.length === 0 || isUploading) return
 
+    clearAlbum()
+    clearUploadedAssets()
     setIsUploading(true)
 
     try {
@@ -82,6 +96,39 @@ function CreatePage() {
         <h1 className="mb-6 text-5xl font-normal tracking-[-0.04em]">
           Add your photos
         </h1>
+
+        <section className="mb-12">
+          <h2 className="mb-4 text-sm text-neutral-500">Existing albums</h2>
+
+          {albumsQuery.isLoading && (
+            <p className="text-sm text-neutral-500">Loading albums...</p>
+          )}
+
+          {albumsQuery.isError && (
+            <p className="text-sm text-neutral-500">
+              Albums could not be loaded.
+            </p>
+          )}
+
+          {albumsQuery.data?.length === 0 && (
+            <p className="text-sm text-neutral-500">No albums created yet.</p>
+          )}
+
+          {albumsQuery.data && albumsQuery.data.length > 0 && (
+            <div className="grid gap-2">
+              {albumsQuery.data.map((album) => (
+                <button
+                  key={album.id}
+                  type="button"
+                  onClick={() => handleOpenAlbum(album.id)}
+                  className="border border-neutral-300 bg-white px-4 py-3 text-left text-sm"
+                >
+                  {album.id}
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
 
         <form onSubmit={handleContinue}>
           <label className="mb-8 flex h-56 cursor-pointer items-center justify-center border border-neutral-300 bg-white">
