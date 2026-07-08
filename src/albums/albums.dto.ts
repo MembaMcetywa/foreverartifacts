@@ -17,7 +17,6 @@ export class CreateAlbumDto {
   albumSpecId: string;
 
   @IsArray()
-  @ArrayNotEmpty()
   @ArrayUnique()
   @IsUUID('4', { each: true })
   assetIds: string[];

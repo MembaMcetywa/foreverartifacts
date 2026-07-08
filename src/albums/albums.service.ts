@@ -25,7 +25,7 @@ export class AlbumsService {
     return this.prisma.album.create({
       data: {
         id: albumId,
-        albumName: albumId,
+        albumName: 'Untitled',
         albumSpecId: input.albumSpecId,
         state: 'draft',
         assets: {
