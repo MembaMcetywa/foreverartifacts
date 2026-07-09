@@ -1,11 +1,26 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 
-import { createAlbum, getAlbum, listAlbums } from '../api/albums'
-import type {Album, CreateAlbumInput} from '../api/albums';
+import {
+  addAlbumAssets,
+  createAlbum,
+  getAlbum,
+  listAlbums,
+} from '../api/albums'
+import type {
+  AddAlbumAssetsInput,
+  Album,
+  CreateAlbumInput,
+} from '../api/albums'
 
 export function useCreateAlbumMutation() {
   return useMutation<Album, Error, CreateAlbumInput>({
     mutationFn: createAlbum,
+  })
+}
+
+export function useAddAlbumAssetsMutation() {
+  return useMutation<Album, Error, AddAlbumAssetsInput>({
+    mutationFn: addAlbumAssets,
   })
 }
 
