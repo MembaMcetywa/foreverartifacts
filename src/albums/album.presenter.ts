@@ -4,6 +4,8 @@ import { StorageService } from '../storage/storage.service';
 import { AlbumResponseDto } from './albums.dto';
 import { AlbumsService } from './albums.service';
 
+const INTERIOR_SPREAD_COUNT = 12;
+
 type AlbumRecord = Awaited<ReturnType<AlbumsService['getAlbum']>>;
 
 @Injectable()
@@ -55,6 +57,20 @@ export class AlbumPresenter {
       updatedAt: album.updatedAt,
       assets,
       spreads,
+      spreadPositions: Array.from(
+        { length: INTERIOR_SPREAD_COUNT },
+        (_, index) => {
+          const spread = spreads.find(
+            (albumSpread) => albumSpread.order === index,
+          );
+
+          return {
+            position: index + 1,
+            status: spread ? ('complete' as const) : ('empty' as const),
+            spread: spread ?? null,
+          };
+        },
+      ),
     };
   }
 }
