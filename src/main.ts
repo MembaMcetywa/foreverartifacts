@@ -13,7 +13,7 @@ async function bootstrap() {
   );
   app.enableCors({
     origin: 'http://localhost:3001',
-    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'DELETE', 'OPTIONS', 'PUT', 'PATCH'],
     allowedHeaders: ['Content-Type'],
   });
   await app.listen(3000);
