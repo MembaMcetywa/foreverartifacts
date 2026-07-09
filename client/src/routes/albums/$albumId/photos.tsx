@@ -1,11 +1,15 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ChangeEvent } from 'react'
 import { useEffect, useRef, useState } from 'react'
 
 import { Button } from '../../../components/Button'
 import { CreationShell } from '../../../components/CreationShell'
 import { SelectedPhotograph } from '../../../components/SelectedPhotograph'
-import { useAlbumQuery } from '../../../queries/albums'
+import {
+  useAddAlbumAssetsMutation,
+  useAlbumQuery,
+} from '../../../queries/albums'
 import { useUploadAssetMutation } from '../../../queries/assets'
 import {
   getFileIdentity,
@@ -26,7 +30,10 @@ interface SelectedPhoto {
 
 function PhotographsPage() {
   const { albumId } = Route.useParams()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const albumQuery = useAlbumQuery(albumId)
+  const addAlbumAssetsMutation = useAddAlbumAssetsMutation()
   const uploadAssetMutation = useUploadAssetMutation()
   const previewUrls = useRef(new Set<string>())
   const [selectedPhotos, setSelectedPhotos] = useState<SelectedPhoto[]>([])
@@ -86,6 +93,9 @@ function PhotographsPage() {
     }
 
     setIsUploading(true)
+    let attemptedUpload = false
+    let uploadFailed = false
+    const uploadedAssetIds: string[] = []
 
     for (const photo of selectedPhotos) {
       if (photo.status !== 'selected' && photo.status !== 'failed') {
@@ -96,8 +106,11 @@ function PhotographsPage() {
       const contentType = getImageContentType(photo.file)
 
       if (!contentType) {
+        uploadFailed = true
         continue
       }
+
+      attemptedUpload = true
 
       setSelectedPhotos((currentPhotos) =>
         currentPhotos.map((currentPhoto) =>
@@ -108,10 +121,11 @@ function PhotographsPage() {
       )
 
       try {
-        await uploadAssetMutation.mutateAsync({
+        const uploadedAsset = await uploadAssetMutation.mutateAsync({
           file: photo.file,
           contentType,
         })
+        uploadedAssetIds.push(uploadedAsset.assetId)
 
         setSelectedPhotos((currentPhotos) =>
           currentPhotos.map((currentPhoto) =>
@@ -121,6 +135,7 @@ function PhotographsPage() {
           ),
         )
       } catch {
+        uploadFailed = true
         setSelectedPhotos((currentPhotos) =>
           currentPhotos.map((currentPhoto) =>
             getFileIdentity(currentPhoto.file) === identity
@@ -132,6 +147,24 @@ function PhotographsPage() {
     }
 
     setIsUploading(false)
+
+    if (attemptedUpload && !uploadFailed) {
+      try {
+        await addAlbumAssetsMutation.mutateAsync({
+          albumId,
+          assetIds: uploadedAssetIds,
+        })
+        await queryClient.invalidateQueries({ queryKey: ['album', albumId] })
+        navigate({
+          to: '/albums/$albumId/arrange',
+          params: { albumId },
+        })
+      } catch {
+        setSelectionErrors([
+          'Uploaded photographs could not be added to this book. Try uploading again.',
+        ])
+      }
+    }
   }
 
   return (
