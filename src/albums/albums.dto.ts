@@ -51,6 +51,8 @@ export class AddAlbumSpreadDto {
   slots: AlbumSpreadSlotDto[];
 }
 
+export class UpdateAlbumSpreadDto extends AddAlbumSpreadDto {}
+
 export interface AlbumResponseDto {
   id: string;
   albumName: string;
@@ -80,5 +82,25 @@ export interface AlbumResponseDto {
         previewUrl: string;
       };
     }[];
+  }[];
+  spreadPositions: {
+    position: number;
+    status: 'complete' | 'empty';
+    spread: {
+      id: string;
+      templateId: string;
+      order: number;
+      slots: {
+        id: string;
+        slotIndex: number;
+        assetId: string;
+        asset: {
+          id: string;
+          key: string;
+          sourceContentType: string;
+          previewUrl: string;
+        };
+      }[];
+    } | null;
   }[];
 }
