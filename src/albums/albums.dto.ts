@@ -22,6 +22,14 @@ export class CreateAlbumDto {
   assetIds: string[];
 }
 
+export class AddAlbumAssetsDto {
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayUnique()
+  @IsUUID('4', { each: true })
+  assetIds: string[];
+}
+
 export class AlbumSpreadSlotDto {
   @IsInt()
   @Min(0)
