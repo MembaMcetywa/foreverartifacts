@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { ChevronDown } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -7,18 +7,31 @@ import { Button } from '../../../components/Button'
 import { CreationShell } from '../../../components/CreationShell'
 import { ModalWrapper } from '../../../components/ModalWrapper'
 import { useAlbumQuery } from '../../../queries/albums'
-import { useAddSpreadMutation } from '../../../queries/spreads'
+import { useSaveSpreadAtPositionMutation } from '../../../queries/spreads'
 import { useLayoutTemplatesQuery } from '../../../queries/templates'
 
 export const Route = createFileRoute('/albums/$albumId/arrange')({
+  validateSearch: (search: Record<string, unknown>) => {
+    const spread = Number(search.spread)
+
+    return {
+      spread:
+        Number.isInteger(spread) && spread >= 1 && spread <= 12
+          ? spread
+          : undefined,
+      returnTo: search.returnTo === 'review' ? 'review' : undefined,
+    }
+  },
   component: ArrangePage,
 })
 
 function ArrangePage() {
   const { albumId } = Route.useParams()
+  const { spread: requestedSpreadPosition } = Route.useSearch()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const albumQuery = useAlbumQuery(albumId)
-  const addSpreadMutation = useAddSpreadMutation()
+  const saveSpreadMutation = useSaveSpreadAtPositionMutation()
   const templatesQuery = useLayoutTemplatesQuery(
     albumQuery.data?.albumSpecId ?? null,
   )
@@ -34,8 +47,22 @@ function ArrangePage() {
     albumQuery.data?.albumName && albumQuery.data.albumName !== albumId
       ? albumQuery.data.albumName
       : 'Untitled'
-  const completedSpreads = albumQuery.data?.spreads.length ?? 0
-  const activeSpread = Math.min(completedSpreads + 1, 12)
+  const spreadPositions = albumQuery.data?.spreadPositions ?? []
+  const completedSpreads = spreadPositions.filter(
+    (spreadPosition) => spreadPosition.status === 'complete',
+  ).length
+  const firstEmptySpreadPosition = spreadPositions.find(
+    (spreadPosition) => spreadPosition.status === 'empty',
+  )?.position
+  const activeSpreadPosition =
+    requestedSpreadPosition ?? firstEmptySpreadPosition ?? 12
+  const activeSpread = spreadPositions.find(
+    (spreadPosition) => spreadPosition.position === activeSpreadPosition,
+  )
+  const activeSpreadRecord = activeSpread?.spread ?? null
+  const isEditingSpread = Boolean(activeSpreadRecord)
+  const hasCompletedAllSpreads = completedSpreads === 12
+  const shouldShowCompletion = hasCompletedAllSpreads && !isEditingSpread
   const selectedTemplate = templatesQuery.data?.find(
     (template) => template.id === selectedTemplateId,
   )
@@ -49,12 +76,25 @@ function ArrangePage() {
       (asset) => asset.assetId === slotAssignments[slotIndex],
     ),
   }))
+  const originalTemplateId = activeSpreadRecord?.templateId ?? null
+  const originalSlotAssignments = Object.fromEntries(
+    activeSpreadRecord?.slots.map((slot) => [slot.slotIndex, slot.assetId]) ??
+      [],
+  )
+  const hasSpreadChanges =
+    !isEditingSpread ||
+    selectedTemplateId !== originalTemplateId ||
+    spreadSlots.some(
+      (slotIndex) =>
+        slotAssignments[slotIndex] !== originalSlotAssignments[slotIndex],
+    )
   const canAddSpread =
     Boolean(selectedTemplate) &&
     spreadSlots.length > 0 &&
     spreadSlots.every((slotIndex) => slotAssignments[slotIndex]) &&
-    completedSpreads < 12 &&
-    !addSpreadMutation.isPending
+    (completedSpreads < 12 || isEditingSpread) &&
+    hasSpreadChanges &&
+    !saveSpreadMutation.isPending
 
   useEffect(() => {
     const firstTemplate = templatesQuery.data?.[0]
@@ -63,6 +103,21 @@ function ArrangePage() {
       setSelectedTemplateId(firstTemplate.id)
     }
   }, [selectedTemplateId, templatesQuery.data])
+
+  useEffect(() => {
+    if (activeSpreadRecord) {
+      setSelectedTemplateId(activeSpreadRecord.templateId)
+      setSlotAssignments(
+        Object.fromEntries(
+          activeSpreadRecord.slots.map((slot) => [
+            slot.slotIndex,
+            slot.assetId,
+          ]),
+        ),
+      )
+      setActiveSlotIndex(0)
+    }
+  }, [activeSpreadRecord])
 
   useEffect(() => {
     if (selectedTemplate) {
@@ -115,11 +170,22 @@ function ArrangePage() {
       return
     }
 
-    await addSpreadMutation.mutateAsync({
+    const savedAlbum = await saveSpreadMutation.mutateAsync({
       albumId,
+      position: activeSpreadPosition,
       templateId: selectedTemplate.id,
       slots,
     })
+
+    if (isEditingSpread) {
+      queryClient.setQueryData(['album', albumId], savedAlbum)
+      await navigate({
+        to: '/albums/$albumId/review',
+        params: { albumId },
+      })
+      return
+    }
+
     await queryClient.invalidateQueries({ queryKey: ['album', albumId] })
     setSlotAssignments({})
     setActiveSlotIndex(0)
@@ -140,43 +206,167 @@ function ArrangePage() {
       )}
 
       {albumQuery.data && (
-        <CreationShell stage="Arrange · 2 of 5" title={albumTitle}>
+        <CreationShell stage="Arrange - 2 of 5" title={albumTitle}>
           <section className="arrange-workspace">
-            <header className="arrange-workspace__header">
-              <dl className="arrange-workspace__summary">
-                <dt>
-                  <h1>Spread {String(activeSpread).padStart(2, '0')}</h1>
-                </dt>
-                <dd className="arrange-workspace__progress">
-                  {completedSpreads}/12 spreads complete
-                </dd>
-              </dl>
-            </header>
+            {!shouldShowCompletion && (
+              <header className="arrange-workspace__header">
+                <dl className="arrange-workspace__summary">
+                  <dt>
+                    <h1>
+                      Spread {String(activeSpreadPosition).padStart(2, '0')}
+                    </h1>
+                  </dt>
+                  <dd className="arrange-workspace__progress">
+                    {completedSpreads}/12 spreads complete
+                  </dd>
+                </dl>
+              </header>
+            )}
 
-            <div className="arrange-workspace__content">
-              <div className="arrange-canvas-region">
-                <button
-                  type="button"
-                  className="arrange-template-menu"
-                  aria-haspopup="dialog"
-                  aria-expanded={layoutModalOpen}
-                  onClick={() => setLayoutModalOpen(true)}
+            {shouldShowCompletion && (
+              <div className="arrange-completion-panel">
+                <div>
+                  <h2>All 12 spreads are complete</h2>
+                  <p>
+                    Review the full book sequence before generating your proof
+                    PDF.
+                  </p>
+                </div>
+                <Link
+                  className="button"
+                  to="/albums/$albumId/review"
+                  params={{ albumId }}
                 >
-                  <strong>{selectedTemplate?.name ?? 'Select layout'}</strong>
-                  <ChevronDown
-                    aria-hidden="true"
-                    size={16}
-                    strokeWidth={1.75}
-                  />
-                </button>
+                  Continue to review
+                </Link>
+              </div>
+            )}
 
-                <ModalWrapper
-                  open={layoutModalOpen}
-                  title="Choose layout"
-                  onClose={() => setLayoutModalOpen(false)}
-                >
-                  <div className="arrange-template-rail arrange-template-rail--modal">
+            {!shouldShowCompletion && (
+              <div className="arrange-workspace__content">
+                <div className="arrange-canvas-region">
+                  <button
+                    type="button"
+                    className="arrange-template-menu"
+                    aria-haspopup="dialog"
+                    aria-expanded={layoutModalOpen}
+                    onClick={() => setLayoutModalOpen(true)}
+                  >
+                    <strong>{selectedTemplate?.name ?? 'Select layout'}</strong>
+                    <ChevronDown
+                      aria-hidden="true"
+                      size={16}
+                      strokeWidth={1.75}
+                    />
+                  </button>
+
+                  <ModalWrapper
+                    open={layoutModalOpen}
+                    title="Choose layout"
+                    onClose={() => setLayoutModalOpen(false)}
+                  >
+                    <div className="arrange-template-rail arrange-template-rail--modal">
+                      <div className="arrange-template-rail__header">
+                        {templatesQuery.isLoading && (
+                          <p>Loading templates...</p>
+                        )}
+                        {templatesQuery.isError && (
+                          <p role="alert">Templates could not be loaded.</p>
+                        )}
+                      </div>
+
+                      {templatesQuery.data &&
+                        templatesQuery.data.length > 0 && (
+                          <div
+                            className="arrange-template-options"
+                            aria-label="Spread layout templates"
+                          >
+                            {templatesQuery.data.map((template) => (
+                              <button
+                                key={template.id}
+                                type="button"
+                                aria-pressed={
+                                  template.id === selectedTemplateId
+                                }
+                                className="arrange-template-option"
+                                data-selected={
+                                  template.id === selectedTemplateId
+                                }
+                                onClick={() => {
+                                  setSelectedTemplateId(template.id)
+                                  setLayoutModalOpen(false)
+                                }}
+                              >
+                                <span>{template.name}</span>
+                                <small>
+                                  {template.imageSlots}{' '}
+                                  {template.imageSlots === 1
+                                    ? 'photograph'
+                                    : 'photographs'}
+                                </small>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                      {selectedTemplate && (
+                        <p className="arrange-template-rail__description">
+                          {selectedTemplate.description}
+                        </p>
+                      )}
+                    </div>
+                  </ModalWrapper>
+
+                  <div className="arrange-spread-composer">
+                    <div className="arrange-spread-page" />
+                    <div className="arrange-spread-page" />
+                    <div
+                      className="arrange-spread-slots"
+                      data-layout={selectedTemplate?.id ?? 'empty'}
+                      aria-label={`Spread ${activeSpreadPosition} photograph slots`}
+                    >
+                      {spreadSlotItems.map(({ slotIndex, assignedAsset }) => (
+                        <button
+                          key={slotIndex}
+                          type="button"
+                          className="arrange-spread-slot"
+                          data-slot={slotIndex}
+                          data-active={slotIndex === activeSlotIndex}
+                          aria-pressed={slotIndex === activeSlotIndex}
+                          onClick={() => setActiveSlotIndex(slotIndex)}
+                        >
+                          {assignedAsset && (
+                            <img
+                              src={assignedAsset.previewUrl}
+                              alt={`Photograph placed in slot ${slotIndex + 1}`}
+                            />
+                          )}
+                          {!assignedAsset && <span>Slot {slotIndex + 1}</span>}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <p>
+                    Choose a layout, select a slot, then place a photograph.
+                  </p>
+                  {saveSpreadMutation.isError && (
+                    <p role="alert">This spread could not be saved.</p>
+                  )}
+                  <Button
+                    disabled={!canAddSpread}
+                    loading={saveSpreadMutation.isPending}
+                    onClick={addCurrentSpread}
+                  >
+                    {saveSpreadMutation.isPending
+                      ? 'Saving spread'
+                      : isEditingSpread
+                        ? 'Save changes'
+                        : 'Add spread'}
+                  </Button>
+
+                  <div className="arrange-template-rail arrange-template-rail--desktop">
                     <div className="arrange-template-rail__header">
+                      <h2>Layout</h2>
                       {templatesQuery.isLoading && <p>Loading templates...</p>}
                       {templatesQuery.isError && (
                         <p role="alert">Templates could not be loaded.</p>
@@ -197,7 +387,6 @@ function ArrangePage() {
                             data-selected={template.id === selectedTemplateId}
                             onClick={() => {
                               setSelectedTemplateId(template.id)
-                              setLayoutModalOpen(false)
                             }}
                           >
                             <span>{template.name}</span>
@@ -218,127 +407,42 @@ function ArrangePage() {
                       </p>
                     )}
                   </div>
-                </ModalWrapper>
-
-                <div className="arrange-spread-composer">
-                  <div className="arrange-spread-page" />
-                  <div className="arrange-spread-page" />
-                  <div
-                    className="arrange-spread-slots"
-                    data-layout={selectedTemplate?.id ?? 'empty'}
-                    aria-label={`Spread ${activeSpread} photograph slots`}
-                  >
-                    {spreadSlotItems.map(({ slotIndex, assignedAsset }) => (
-                      <button
-                        key={slotIndex}
-                        type="button"
-                        className="arrange-spread-slot"
-                        data-slot={slotIndex}
-                        data-active={slotIndex === activeSlotIndex}
-                        aria-pressed={slotIndex === activeSlotIndex}
-                        onClick={() => setActiveSlotIndex(slotIndex)}
-                      >
-                        {assignedAsset && (
-                          <img
-                            src={assignedAsset.previewUrl}
-                            alt={`Photograph placed in slot ${slotIndex + 1}`}
-                          />
-                        )}
-                        {!assignedAsset && <span>Slot {slotIndex + 1}</span>}
-                      </button>
-                    ))}
-                  </div>
                 </div>
-                <p>Choose a layout, select a slot, then place a photograph.</p>
-                {addSpreadMutation.isError && (
-                  <p role="alert">This spread could not be added.</p>
-                )}
-                <Button
-                  disabled={!canAddSpread}
-                  loading={addSpreadMutation.isPending}
-                  onClick={addCurrentSpread}
-                >
-                  {addSpreadMutation.isPending ? 'Adding spread' : 'Add spread'}
-                </Button>
 
-                <div className="arrange-template-rail arrange-template-rail--desktop">
-                  <div className="arrange-template-rail__header">
-                    <h2>Layout</h2>
-                    {templatesQuery.isLoading && <p>Loading templates...</p>}
-                    {templatesQuery.isError && (
-                      <p role="alert">Templates could not be loaded.</p>
-                    )}
+                <aside className="arrange-photo-tray" aria-label="Photographs">
+                  <div className="arrange-photo-tray__header">
+                    <h2>Photographs</h2>
+                    <Link to="/albums/$albumId/photos" params={{ albumId }}>
+                      Add photographs
+                    </Link>
                   </div>
 
-                  {templatesQuery.data && templatesQuery.data.length > 0 && (
-                    <div
-                      className="arrange-template-options"
-                      aria-label="Spread layout templates"
-                    >
-                      {templatesQuery.data.map((template) => (
+                  {albumQuery.data.assets.length === 0 && (
+                    <p className="arrange-photo-tray__empty">
+                      No uploaded photographs yet.
+                    </p>
+                  )}
+
+                  {albumQuery.data.assets.length > 0 && (
+                    <div className="arrange-photo-tray__grid">
+                      {albumQuery.data.assets.slice(0, 12).map((asset) => (
                         <button
-                          key={template.id}
+                          key={asset.assetId}
                           type="button"
-                          aria-pressed={template.id === selectedTemplateId}
-                          className="arrange-template-option"
-                          data-selected={template.id === selectedTemplateId}
-                          onClick={() => {
-                            setSelectedTemplateId(template.id)
-                          }}
+                          className="arrange-photo-tray__item"
+                          onClick={() => placePhotograph(asset.assetId)}
                         >
-                          <span>{template.name}</span>
-                          <small>
-                            {template.imageSlots}{' '}
-                            {template.imageSlots === 1
-                              ? 'photograph'
-                              : 'photographs'}
-                          </small>
+                          <img
+                            src={asset.previewUrl}
+                            alt={`Uploaded photograph ${asset.order + 1}`}
+                          />
                         </button>
                       ))}
                     </div>
                   )}
-
-                  {selectedTemplate && (
-                    <p className="arrange-template-rail__description">
-                      {selectedTemplate.description}
-                    </p>
-                  )}
-                </div>
+                </aside>
               </div>
-
-              <aside className="arrange-photo-tray" aria-label="Photographs">
-                <div className="arrange-photo-tray__header">
-                  <h2>Photographs</h2>
-                  <Link to="/albums/$albumId/photos" params={{ albumId }}>
-                    Add photographs
-                  </Link>
-                </div>
-
-                {albumQuery.data.assets.length === 0 && (
-                  <p className="arrange-photo-tray__empty">
-                    No uploaded photographs yet.
-                  </p>
-                )}
-
-                {albumQuery.data.assets.length > 0 && (
-                  <div className="arrange-photo-tray__grid">
-                    {albumQuery.data.assets.slice(0, 12).map((asset) => (
-                      <button
-                        key={asset.assetId}
-                        type="button"
-                        className="arrange-photo-tray__item"
-                        onClick={() => placePhotograph(asset.assetId)}
-                      >
-                        <img
-                          src={asset.previewUrl}
-                          alt={`Uploaded photograph ${asset.order + 1}`}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </aside>
-            </div>
+            )}
           </section>
         </CreationShell>
       )}
