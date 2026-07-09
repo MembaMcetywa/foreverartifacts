@@ -37,6 +37,12 @@ export interface AlbumSpread {
   slots: AlbumSpreadSlot[]
 }
 
+export interface AlbumSpreadPosition {
+  position: number
+  status: 'complete' | 'empty'
+  spread: AlbumSpread | null
+}
+
 export interface Album {
   id: string
   albumName: string
@@ -44,6 +50,7 @@ export interface Album {
   state: string
   assets: AlbumAsset[]
   spreads: AlbumSpread[]
+  spreadPositions: AlbumSpreadPosition[]
 }
 
 const API_BASE_URL =
