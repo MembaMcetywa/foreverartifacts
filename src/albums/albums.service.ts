@@ -9,6 +9,8 @@ import { PrismaService } from '../database/prisma.service';
 import { LayoutRegistryService } from '../layout/layout.registry.service';
 import { AlbumSpread, AlbumState } from './album.types';
 
+const INTERIOR_SPREAD_COUNT = 12;
+
 interface CreateAlbumInput {
   albumSpecId: string;
   assetIds: string[];
@@ -104,25 +106,19 @@ export class AlbumsService {
 
   async addSpread(albumId: string, spread: AlbumSpread) {
     const album = await this.getAlbum(albumId);
+    this.validateSpread(album, spread);
 
-    const library = this.layoutRegistry.getLayoutLibrary(album.albumSpecId);
-    const template = library.templates.find(
-      (template) => template.id === spread.templateId,
+    const usedOrders = new Set(
+      album.spreads.map((albumSpread) => albumSpread.order),
     );
+    const order = Array.from(
+      { length: INTERIOR_SPREAD_COUNT },
+      (_, index) => index,
+    ).find((spreadOrder) => !usedOrders.has(spreadOrder));
 
-    if (!template) {
-      throw new Error(
-        `Unknown template '${spread.templateId}' for album '${albumId}'.`,
-      );
+    if (order === undefined) {
+      throw new BadRequestException('All 12 interior spreads are complete.');
     }
-
-    if (spread.slots.length !== template.imageSlots) {
-      throw new Error(
-        `Template '${template.id}' requires ${template.imageSlots} image slots.`,
-      );
-    }
-
-    const order = album.spreads.length;
 
     await this.prisma.albumSpread.create({
       data: {
@@ -139,6 +135,97 @@ export class AlbumsService {
         },
       },
     });
+
+    return this.getAlbum(albumId);
+  }
+
+  async saveSpreadAtPosition(
+    albumId: string,
+    position: number,
+    spread: AlbumSpread,
+  ) {
+    const album = await this.getAlbum(albumId);
+    const order = this.getOrderForPosition(position);
+    const existingSpread = album.spreads.find(
+      (albumSpread) => albumSpread.order === order,
+    );
+
+    this.validateSpread(album, spread);
+
+    if (existingSpread) {
+      await this.prisma.$transaction([
+        this.prisma.albumSlot.deleteMany({
+          where: { spreadId: existingSpread.id },
+        }),
+        this.prisma.albumSpread.update({
+          where: { id: existingSpread.id },
+          data: {
+            templateId: spread.templateId,
+            slots: {
+              create: spread.slots.map((slot) => ({
+                id: randomUUID(),
+                slotIndex: slot.slotIndex,
+                assetId: slot.assetId,
+              })),
+            },
+          },
+        }),
+      ]);
+    }
+
+    if (!existingSpread) {
+      await this.prisma.albumSpread.create({
+        data: {
+          id: randomUUID(),
+          albumId,
+          templateId: spread.templateId,
+          order,
+          slots: {
+            create: spread.slots.map((slot) => ({
+              id: randomUUID(),
+              slotIndex: slot.slotIndex,
+              assetId: slot.assetId,
+            })),
+          },
+        },
+      });
+    }
+
+    return this.getAlbum(albumId);
+  }
+
+  async updateSpread(albumId: string, spreadId: string, spread: AlbumSpread) {
+    const album = await this.getAlbum(albumId);
+    const existingSpread = album.spreads.find(
+      (albumSpread) => albumSpread.id === spreadId,
+    );
+
+    if (!existingSpread) {
+      throw new NotFoundException(
+        `Spread '${spreadId}' was not found in album '${albumId}'.`,
+      );
+    }
+
+    this.validateSpread(album, spread);
+
+    await this.prisma.$transaction([
+      this.prisma.albumSlot.deleteMany({
+        where: { spreadId },
+      }),
+      this.prisma.albumSpread.update({
+        where: { id: spreadId },
+        data: {
+          templateId: spread.templateId,
+          slots: {
+            create: spread.slots.map((slot) => ({
+              id: randomUUID(),
+              slotIndex: slot.slotIndex,
+              assetId: slot.assetId,
+            })),
+          },
+        },
+      }),
+    ]);
 
     return this.getAlbum(albumId);
   }
@@ -190,5 +277,71 @@ export class AlbumsService {
         },
       },
     };
+  }
+
+  private validateSpread(
+    album: Awaited<ReturnType<AlbumsService['getAlbum']>>,
+    spread: AlbumSpread,
+  ) {
+    const library = this.layoutRegistry.getLayoutLibrary(album.albumSpecId);
+    const template = library.templates.find(
+      (template) => template.id === spread.templateId,
+    );
+
+    if (!template) {
+      throw new BadRequestException(
+        `Unknown template '${spread.templateId}' for album '${album.id}'.`,
+      );
+    }
+
+    if (spread.slots.length !== template.imageSlots) {
+      throw new BadRequestException(
+        `Template '${template.id}' requires ${template.imageSlots} image slots.`,
+      );
+    }
+
+    const expectedSlotIndices = Array.from(
+      { length: template.imageSlots },
+      (_, index) => index,
+    );
+    const slotIndices = spread.slots
+      .map((slot) => slot.slotIndex)
+      .sort((left, right) => left - right);
+    const hasExpectedSlotIndices = expectedSlotIndices.every(
+      (slotIndex, index) => slotIndices[index] === slotIndex,
+    );
+
+    if (!hasExpectedSlotIndices) {
+      throw new BadRequestException(
+        `Template '${template.id}' requires slot indices ${expectedSlotIndices.join(', ')}.`,
+      );
+    }
+
+    const albumAssetIds = new Set(
+      album.assets.map((albumAsset) => albumAsset.assetId),
+    );
+    const missingAssetIds = spread.slots
+      .map((slot) => slot.assetId)
+      .filter((assetId) => !albumAssetIds.has(assetId));
+
+    if (missingAssetIds.length > 0) {
+      throw new BadRequestException(
+        `Photographs are not attached to this album: ${missingAssetIds.join(', ')}.`,
+      );
+    }
+  }
+
+  private getOrderForPosition(position: number) {
+    if (
+      !Number.isInteger(position) ||
+      position < 1 ||
+      position > INTERIOR_SPREAD_COUNT
+    ) {
+      throw new BadRequestException(
+        `Spread position must be between 1 and ${INTERIOR_SPREAD_COUNT}.`,
+      );
+    }
+
+    return position - 1;
   }
 }
