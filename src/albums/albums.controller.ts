@@ -4,8 +4,11 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   ParseUUIDPipe,
+  Patch,
   Post,
+  Put,
 } from '@nestjs/common';
 
 import { RenderService } from '../render/render.service';
@@ -15,6 +18,7 @@ import {
   AddAlbumSpreadDto,
   AlbumResponseDto,
   CreateAlbumDto,
+  UpdateAlbumSpreadDto,
 } from './albums.dto';
 import { AlbumsService } from './albums.service';
 
@@ -61,6 +65,30 @@ export class AlbumsController {
     @Body() spread: AddAlbumSpreadDto,
   ): Promise<AlbumResponseDto> {
     const album = await this.albumsService.addSpread(id, spread);
+    return this.albumPresenter.toDto(album);
+  }
+
+  @Put(':id/spreads/positions/:position')
+  async saveSpreadAtPosition(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Param('position', ParseIntPipe) position: number,
+    @Body() spread: UpdateAlbumSpreadDto,
+  ): Promise<AlbumResponseDto> {
+    const album = await this.albumsService.saveSpreadAtPosition(
+      id,
+      position,
+      spread,
+    );
+    return this.albumPresenter.toDto(album);
+  }
+
+  @Patch(':id/spreads/:spreadId')
+  async updateSpread(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Param('spreadId', new ParseUUIDPipe({ version: '4' })) spreadId: string,
+    @Body() spread: UpdateAlbumSpreadDto,
+  ): Promise<AlbumResponseDto> {
+    const album = await this.albumsService.updateSpread(id, spreadId, spread);
     return this.albumPresenter.toDto(album);
   }
 
