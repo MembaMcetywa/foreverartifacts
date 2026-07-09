@@ -1,10 +1,11 @@
 import { useMutation } from '@tanstack/react-query'
 
-import type { AddSpreadInput} from '../api/spreads';
+import type { Album } from '../api/albums'
+import type { AddSpreadInput } from '../api/spreads'
 import { addSpread } from '../api/spreads'
 
 export function useAddSpreadMutation() {
-  return useMutation<void, Error, AddSpreadInput>({
+  return useMutation<Album, Error, AddSpreadInput>({
     mutationFn: addSpread,
   })
 }
