@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
 import { PrismaService } from '../database/prisma.service';
@@ -51,6 +55,51 @@ export class AlbumsService {
     }
 
     return album;
+  }
+
+  async addAssets(albumId: string, assetIds: string[]) {
+    const album = await this.getAlbum(albumId);
+    const existingAssetIds = new Set(
+      album.assets.map((albumAsset) => albumAsset.assetId),
+    );
+    const newAssetIds = assetIds.filter(
+      (assetId) => !existingAssetIds.has(assetId),
+    );
+    const readyAssets = await this.prisma.asset.findMany({
+      where: {
+        id: { in: newAssetIds },
+        status: 'ready',
+      },
+      select: { id: true },
+    });
+    const readyAssetIds = new Set(readyAssets.map((asset) => asset.id));
+    const missingAssetIds = newAssetIds.filter(
+      (assetId) => !readyAssetIds.has(assetId),
+    );
+
+    if (missingAssetIds.length > 0) {
+      throw new BadRequestException(
+        `Assets are not ready or do not exist: ${missingAssetIds.join(', ')}.`,
+      );
+    }
+
+    const nextOrder =
+      album.assets.length > 0
+        ? Math.max(...album.assets.map((albumAsset) => albumAsset.order)) + 1
+        : 0;
+
+    if (newAssetIds.length > 0) {
+      await this.prisma.albumAsset.createMany({
+        data: newAssetIds.map((assetId, index) => ({
+          id: randomUUID(),
+          albumId,
+          assetId,
+          order: nextOrder + index,
+        })),
+      });
+    }
+
+    return this.getAlbum(albumId);
   }
 
   async addSpread(albumId: string, spread: AlbumSpread) {

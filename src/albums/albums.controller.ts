@@ -11,6 +11,7 @@ import {
 import { RenderService } from '../render/render.service';
 import { AlbumPresenter } from './album.presenter';
 import {
+  AddAlbumAssetsDto,
   AddAlbumSpreadDto,
   AlbumResponseDto,
   CreateAlbumDto,
@@ -45,6 +46,15 @@ export class AlbumsController {
     return this.albumPresenter.toDto(album);
   }
 
+  @Post(':id/assets')
+  async addAssets(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() body: AddAlbumAssetsDto,
+  ): Promise<AlbumResponseDto> {
+    const album = await this.albumsService.addAssets(id, body.assetIds);
+    return this.albumPresenter.toDto(album);
+  }
+
   @Post(':id/spreads')
   async addSpread(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
@@ -63,9 +73,7 @@ export class AlbumsController {
   }
 
   @Post(':id/render')
-  async render(
-    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
-  ) {
+  async render(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
     const album = await this.albumsService.getAlbum(id);
 
     return this.renderService.renderAlbum({
