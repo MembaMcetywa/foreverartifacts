@@ -12,6 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CreateIndexRouteImport } from './routes/create/index'
 import { Route as CreateAlbumRouteImport } from './routes/create/album'
+import { Route as AlbumsAlbumIdReviewRouteImport } from './routes/albums/$albumId/review'
+import { Route as AlbumsAlbumIdPhotosRouteImport } from './routes/albums/$albumId/photos'
+import { Route as AlbumsAlbumIdArrangeRouteImport } from './routes/albums/$albumId/arrange'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,35 +31,81 @@ const CreateAlbumRoute = CreateAlbumRouteImport.update({
   path: '/create/album',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AlbumsAlbumIdReviewRoute = AlbumsAlbumIdReviewRouteImport.update({
+  id: '/albums/$albumId/review',
+  path: '/albums/$albumId/review',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AlbumsAlbumIdPhotosRoute = AlbumsAlbumIdPhotosRouteImport.update({
+  id: '/albums/$albumId/photos',
+  path: '/albums/$albumId/photos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AlbumsAlbumIdArrangeRoute = AlbumsAlbumIdArrangeRouteImport.update({
+  id: '/albums/$albumId/arrange',
+  path: '/albums/$albumId/arrange',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/create/album': typeof CreateAlbumRoute
   '/create/': typeof CreateIndexRoute
+  '/albums/$albumId/arrange': typeof AlbumsAlbumIdArrangeRoute
+  '/albums/$albumId/photos': typeof AlbumsAlbumIdPhotosRoute
+  '/albums/$albumId/review': typeof AlbumsAlbumIdReviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/create/album': typeof CreateAlbumRoute
   '/create': typeof CreateIndexRoute
+  '/albums/$albumId/arrange': typeof AlbumsAlbumIdArrangeRoute
+  '/albums/$albumId/photos': typeof AlbumsAlbumIdPhotosRoute
+  '/albums/$albumId/review': typeof AlbumsAlbumIdReviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/create/album': typeof CreateAlbumRoute
   '/create/': typeof CreateIndexRoute
+  '/albums/$albumId/arrange': typeof AlbumsAlbumIdArrangeRoute
+  '/albums/$albumId/photos': typeof AlbumsAlbumIdPhotosRoute
+  '/albums/$albumId/review': typeof AlbumsAlbumIdReviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/create/album' | '/create/'
+  fullPaths:
+    | '/'
+    | '/create/album'
+    | '/create/'
+    | '/albums/$albumId/arrange'
+    | '/albums/$albumId/photos'
+    | '/albums/$albumId/review'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/create/album' | '/create'
-  id: '__root__' | '/' | '/create/album' | '/create/'
+  to:
+    | '/'
+    | '/create/album'
+    | '/create'
+    | '/albums/$albumId/arrange'
+    | '/albums/$albumId/photos'
+    | '/albums/$albumId/review'
+  id:
+    | '__root__'
+    | '/'
+    | '/create/album'
+    | '/create/'
+    | '/albums/$albumId/arrange'
+    | '/albums/$albumId/photos'
+    | '/albums/$albumId/review'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CreateAlbumRoute: typeof CreateAlbumRoute
   CreateIndexRoute: typeof CreateIndexRoute
+  AlbumsAlbumIdArrangeRoute: typeof AlbumsAlbumIdArrangeRoute
+  AlbumsAlbumIdPhotosRoute: typeof AlbumsAlbumIdPhotosRoute
+  AlbumsAlbumIdReviewRoute: typeof AlbumsAlbumIdReviewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,6 +131,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CreateAlbumRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/albums/$albumId/review': {
+      id: '/albums/$albumId/review'
+      path: '/albums/$albumId/review'
+      fullPath: '/albums/$albumId/review'
+      preLoaderRoute: typeof AlbumsAlbumIdReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/albums/$albumId/photos': {
+      id: '/albums/$albumId/photos'
+      path: '/albums/$albumId/photos'
+      fullPath: '/albums/$albumId/photos'
+      preLoaderRoute: typeof AlbumsAlbumIdPhotosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/albums/$albumId/arrange': {
+      id: '/albums/$albumId/arrange'
+      path: '/albums/$albumId/arrange'
+      fullPath: '/albums/$albumId/arrange'
+      preLoaderRoute: typeof AlbumsAlbumIdArrangeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -89,6 +159,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CreateAlbumRoute: CreateAlbumRoute,
   CreateIndexRoute: CreateIndexRoute,
+  AlbumsAlbumIdArrangeRoute: AlbumsAlbumIdArrangeRoute,
+  AlbumsAlbumIdPhotosRoute: AlbumsAlbumIdPhotosRoute,
+  AlbumsAlbumIdReviewRoute: AlbumsAlbumIdReviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
