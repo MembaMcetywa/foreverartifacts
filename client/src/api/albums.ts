@@ -3,6 +3,11 @@ export interface CreateAlbumInput {
   assetIds: string[]
 }
 
+export interface AddAlbumAssetsInput {
+  albumId: string
+  assetIds: string[]
+}
+
 export interface AlbumAsset {
   assetId: string
   key: string
@@ -65,6 +70,27 @@ export async function getAlbum(albumId: string): Promise<Album> {
 
   if (!response.ok) {
     throw new Error('Failed to fetch album.')
+  }
+
+  return (await response.json()) as Album
+}
+
+export async function addAlbumAssets(
+  input: AddAlbumAssetsInput,
+): Promise<Album> {
+  const response = await fetch(
+    `${API_BASE_URL}/albums/${input.albumId}/assets`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ assetIds: input.assetIds }),
+    },
+  )
+
+  if (!response.ok) {
+    throw new Error('Failed to add photographs to the album.')
   }
 
   return (await response.json()) as Album
