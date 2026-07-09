@@ -18,6 +18,7 @@ import {
   AddAlbumSpreadDto,
   AlbumResponseDto,
   CreateAlbumDto,
+  ReorderAlbumSpreadsDto,
   UpdateAlbumSpreadDto,
 } from './albums.dto';
 import { AlbumsService } from './albums.service';
@@ -89,6 +90,15 @@ export class AlbumsController {
     @Body() spread: UpdateAlbumSpreadDto,
   ): Promise<AlbumResponseDto> {
     const album = await this.albumsService.updateSpread(id, spreadId, spread);
+    return this.albumPresenter.toDto(album);
+  }
+
+  @Put(':id/spreads/order')
+  async reorderSpreads(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() body: ReorderAlbumSpreadsDto,
+  ): Promise<AlbumResponseDto> {
+    const album = await this.albumsService.reorderSpreads(id, body.positions);
     return this.albumPresenter.toDto(album);
   }
 

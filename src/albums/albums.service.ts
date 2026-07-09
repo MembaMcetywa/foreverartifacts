@@ -16,6 +16,11 @@ interface CreateAlbumInput {
   assetIds: string[];
 }
 
+interface ReorderSpreadPositionInput {
+  position: number;
+  spreadId: string;
+}
+
 @Injectable()
 export class AlbumsService {
   constructor(
@@ -225,6 +230,62 @@ export class AlbumsService {
           },
         },
       }),
+    ]);
+
+    return this.getAlbum(albumId);
+  }
+
+  async reorderSpreads(
+    albumId: string,
+    positions: ReorderSpreadPositionInput[],
+  ) {
+    const album = await this.getAlbum(albumId);
+    const requestedSpreadIds = positions.map((position) => position.spreadId);
+    const requestedOrders = positions.map((position) =>
+      this.getOrderForPosition(position.position),
+    );
+
+    if (new Set(requestedSpreadIds).size !== requestedSpreadIds.length) {
+      throw new BadRequestException('Spread ids must be unique.');
+    }
+
+    if (new Set(requestedOrders).size !== requestedOrders.length) {
+      throw new BadRequestException('Spread positions must be unique.');
+    }
+
+    const albumSpreadIds = new Set(album.spreads.map((spread) => spread.id));
+    const missingSpreadIds = requestedSpreadIds.filter(
+      (spreadId) => !albumSpreadIds.has(spreadId),
+    );
+    const omittedSpreadIds = album.spreads
+      .map((spread) => spread.id)
+      .filter((spreadId) => !requestedSpreadIds.includes(spreadId));
+
+    if (missingSpreadIds.length > 0) {
+      throw new BadRequestException(
+        `Spreads are not part of this album: ${missingSpreadIds.join(', ')}.`,
+      );
+    }
+
+    if (omittedSpreadIds.length > 0) {
+      throw new BadRequestException(
+        `Every existing spread must be included in the reorder request.`,
+      );
+    }
+
+    await this.prisma.$transaction([
+      ...positions.map((position, index) =>
+        this.prisma.albumSpread.update({
+          where: { id: position.spreadId },
+          data: { order: -index - 1 },
+        }),
+      ),
+      ...positions.map((position) =>
+        this.prisma.albumSpread.update({
+          where: { id: position.spreadId },
+          data: { order: this.getOrderForPosition(position.position) },
+        }),
+      ),
     ]);
 
     return this.getAlbum(albumId);

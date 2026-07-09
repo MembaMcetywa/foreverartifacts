@@ -7,6 +7,7 @@ import {
   IsNotEmpty,
   IsString,
   IsUUID,
+  Max,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -52,6 +53,24 @@ export class AddAlbumSpreadDto {
 }
 
 export class UpdateAlbumSpreadDto extends AddAlbumSpreadDto {}
+
+export class AlbumSpreadOrderPositionDto {
+  @IsInt()
+  @Min(1)
+  @Max(12)
+  position: number;
+
+  @IsUUID('4')
+  spreadId: string;
+}
+
+export class ReorderAlbumSpreadsDto {
+  @IsArray()
+  @ArrayNotEmpty()
+  @ValidateNested({ each: true })
+  @Type(() => AlbumSpreadOrderPositionDto)
+  positions: AlbumSpreadOrderPositionDto[];
+}
 
 export interface AlbumResponseDto {
   id: string;
