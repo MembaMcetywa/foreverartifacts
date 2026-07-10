@@ -8,6 +8,19 @@ export interface AddAlbumAssetsInput {
   assetIds: string[]
 }
 
+export type AlbumWorkflowStage =
+  | 'collect_photos'
+  | 'compose_spreads'
+  | 'review_album'
+  | 'proof_album'
+  | 'ready_to_order'
+
+export interface UpdateAlbumWorkflowInput {
+  albumId: string
+  workflowStage: AlbumWorkflowStage
+  activeSpreadPosition?: number | null
+}
+
 export interface AlbumAsset {
   assetId: string
   key: string
@@ -48,6 +61,8 @@ export interface Album {
   albumName: string
   albumSpecId: string
   state: string
+  workflowStage: AlbumWorkflowStage
+  activeSpreadPosition: number | null
   assets: AlbumAsset[]
   spreads: AlbumSpread[]
   spreadPositions: AlbumSpreadPosition[]
@@ -98,6 +113,27 @@ export async function addAlbumAssets(
 
   if (!response.ok) {
     throw new Error('Failed to add photographs to the album.')
+  }
+
+  return (await response.json()) as Album
+}
+
+export async function updateAlbumWorkflow(
+  input: UpdateAlbumWorkflowInput,
+): Promise<Album> {
+  const response = await fetch(`${API_BASE_URL}/albums/${input.albumId}/workflow`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      workflowStage: input.workflowStage,
+      activeSpreadPosition: input.activeSpreadPosition ?? null,
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to update album workflow.')
   }
 
   return (await response.json()) as Album

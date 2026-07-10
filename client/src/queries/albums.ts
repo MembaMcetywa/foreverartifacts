@@ -1,15 +1,18 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
+import type { QueryClient } from '@tanstack/react-query'
 
 import {
   addAlbumAssets,
   createAlbum,
   getAlbum,
   listAlbums,
+  updateAlbumWorkflow,
 } from '../api/albums'
 import type {
   AddAlbumAssetsInput,
   Album,
   CreateAlbumInput,
+  UpdateAlbumWorkflowInput,
 } from '../api/albums'
 
 export function useCreateAlbumMutation() {
@@ -21,6 +24,12 @@ export function useCreateAlbumMutation() {
 export function useAddAlbumAssetsMutation() {
   return useMutation<Album, Error, AddAlbumAssetsInput>({
     mutationFn: addAlbumAssets,
+  })
+}
+
+export function useUpdateAlbumWorkflowMutation() {
+  return useMutation<Album, Error, UpdateAlbumWorkflowInput>({
+    mutationFn: updateAlbumWorkflow,
   })
 }
 
@@ -44,4 +53,13 @@ export function useAlbumsQuery() {
     queryKey: ['albums'],
     queryFn: listAlbums,
   })
+}
+
+export function writeAlbumToCache(queryClient: QueryClient, album: Album) {
+  queryClient.setQueryData(['album', album.id], album)
+  queryClient.setQueryData<Album[]>(['albums'], (albums) =>
+    albums?.map((cachedAlbum) =>
+      cachedAlbum.id === album.id ? album : cachedAlbum,
+    ),
+  )
 }
