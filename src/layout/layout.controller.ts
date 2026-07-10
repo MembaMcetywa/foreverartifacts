@@ -1,7 +1,9 @@
 import { Controller, Get, NotFoundException, Param } from '@nestjs/common';
 
-import { LayoutRegistryService } from './layout.registry.service';
-import { LayoutTemplate } from './layout.templates';
+import {
+  LayoutRegistryService,
+  LayoutTemplatePreview,
+} from './layout.registry.service';
 
 @Controller('layout')
 export class LayoutController {
@@ -10,9 +12,9 @@ export class LayoutController {
   @Get(':albumSpecId/templates')
   listTemplates(
     @Param('albumSpecId') albumSpecId: string,
-  ): LayoutTemplate[] {
+  ): LayoutTemplatePreview[] {
     try {
-      return this.layoutRegistry.listTemplates(albumSpecId);
+      return this.layoutRegistry.listTemplatePreviews(albumSpecId);
     } catch {
       throw new NotFoundException(
         `No templates found for album specification '${albumSpecId}'.`,
