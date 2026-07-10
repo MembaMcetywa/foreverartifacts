@@ -7,7 +7,7 @@ import { randomUUID } from 'crypto';
 
 import { PrismaService } from '../database/prisma.service';
 import { LayoutRegistryService } from '../layout/layout.registry.service';
-import { AlbumSpread, AlbumState } from './album.types';
+import { AlbumSpread, AlbumState, AlbumWorkflowStage } from './album.types';
 
 const INTERIOR_SPREAD_COUNT = 12;
 
@@ -19,6 +19,11 @@ interface CreateAlbumInput {
 interface ReorderSpreadPositionInput {
   position: number;
   spreadId: string;
+}
+
+interface UpdateWorkflowInput {
+  workflowStage: AlbumWorkflowStage;
+  activeSpreadPosition?: number | null;
 }
 
 @Injectable()
@@ -39,6 +44,7 @@ export class AlbumsService {
         albumName: 'Untitled',
         albumSpecId: input.albumSpecId,
         state: 'draft',
+        workflowStage: 'collect_photos',
         assets: {
           create: input.assetIds.map((assetId, index) => ({
             id: randomUUID(),
@@ -307,6 +313,26 @@ export class AlbumsService {
     return this.prisma.album.update({
       where: { id: albumId },
       data: { state },
+      include: this.albumInclude(),
+    });
+  }
+
+  async updateWorkflow(albumId: string, input: UpdateWorkflowInput) {
+    await this.getAlbum(albumId);
+
+    if (
+      input.activeSpreadPosition !== undefined &&
+      input.activeSpreadPosition !== null
+    ) {
+      this.getOrderForPosition(input.activeSpreadPosition);
+    }
+
+    return this.prisma.album.update({
+      where: { id: albumId },
+      data: {
+        workflowStage: input.workflowStage,
+        activeSpreadPosition: input.activeSpreadPosition ?? null,
+      },
       include: this.albumInclude(),
     });
   }
