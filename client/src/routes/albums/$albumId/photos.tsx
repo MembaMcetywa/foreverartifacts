@@ -9,6 +9,8 @@ import { SelectedPhotograph } from '../../../components/SelectedPhotograph'
 import {
   useAddAlbumAssetsMutation,
   useAlbumQuery,
+  useUpdateAlbumWorkflowMutation,
+  writeAlbumToCache,
 } from '../../../queries/albums'
 import { useUploadAssetMutation } from '../../../queries/assets'
 import {
@@ -19,6 +21,17 @@ import {
 } from '../../../utils/image-upload-policy'
 
 export const Route = createFileRoute('/albums/$albumId/photos')({
+  validateSearch: (search: Record<string, unknown>) => {
+    const spread = Number(search.spread)
+
+    return {
+      spread:
+        Number.isInteger(spread) && spread >= 1 && spread <= 12
+          ? spread
+          : undefined,
+      returnTo: search.returnTo === 'review' ? 'review' : undefined,
+    }
+  },
   component: PhotographsPage,
 })
 
@@ -30,10 +43,12 @@ interface SelectedPhoto {
 
 function PhotographsPage() {
   const { albumId } = Route.useParams()
+  const { returnTo, spread } = Route.useSearch()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const albumQuery = useAlbumQuery(albumId)
   const addAlbumAssetsMutation = useAddAlbumAssetsMutation()
+  const updateWorkflowMutation = useUpdateAlbumWorkflowMutation()
   const uploadAssetMutation = useUploadAssetMutation()
   const previewUrls = useRef(new Set<string>())
   const [selectedPhotos, setSelectedPhotos] = useState<SelectedPhoto[]>([])
@@ -54,6 +69,23 @@ function PhotographsPage() {
       urls.forEach((url) => URL.revokeObjectURL(url))
     }
   }, [])
+
+  useEffect(() => {
+    if (returnTo === 'review') {
+      return
+    }
+
+    updateWorkflowMutation.mutate(
+      {
+        albumId,
+        workflowStage: 'collect_photos',
+        activeSpreadPosition: null,
+      },
+      {
+        onSuccess: (album) => writeAlbumToCache(queryClient, album),
+      },
+    )
+  }, [albumId, queryClient, returnTo])
 
   function handleSelection(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? [])
@@ -155,6 +187,16 @@ function PhotographsPage() {
           assetIds: uploadedAssetIds,
         })
         await queryClient.invalidateQueries({ queryKey: ['album', albumId] })
+
+        if (returnTo === 'review' && spread) {
+          navigate({
+            to: '/albums/$albumId/arrange',
+            params: { albumId },
+            search: { spread, returnTo },
+          })
+          return
+        }
+
         navigate({
           to: '/albums/$albumId/arrange',
           params: { albumId },
