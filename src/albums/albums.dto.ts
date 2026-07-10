@@ -5,12 +5,19 @@ import {
   IsArray,
   IsInt,
   IsNotEmpty,
+  IsIn,
+  IsOptional,
   IsString,
   IsUUID,
   Max,
   Min,
   ValidateNested,
 } from 'class-validator';
+
+import {
+  ALBUM_WORKFLOW_STAGES,
+  AlbumWorkflowStage,
+} from './album.types';
 
 export class CreateAlbumDto {
   @IsString()
@@ -72,11 +79,24 @@ export class ReorderAlbumSpreadsDto {
   positions: AlbumSpreadOrderPositionDto[];
 }
 
+export class UpdateAlbumWorkflowDto {
+  @IsIn(ALBUM_WORKFLOW_STAGES)
+  workflowStage: AlbumWorkflowStage;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(12)
+  activeSpreadPosition?: number | null;
+}
+
 export interface AlbumResponseDto {
   id: string;
   albumName: string;
   albumSpecId: string;
   state: string;
+  workflowStage: AlbumWorkflowStage;
+  activeSpreadPosition: number | null;
   createdAt: Date;
   updatedAt: Date;
   assets: {
