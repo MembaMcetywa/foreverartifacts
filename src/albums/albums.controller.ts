@@ -20,6 +20,7 @@ import {
   CreateAlbumDto,
   ReorderAlbumSpreadsDto,
   UpdateAlbumSpreadDto,
+  UpdateAlbumWorkflowDto,
 } from './albums.dto';
 import { AlbumsService } from './albums.service';
 
@@ -99,6 +100,15 @@ export class AlbumsController {
     @Body() body: ReorderAlbumSpreadsDto,
   ): Promise<AlbumResponseDto> {
     const album = await this.albumsService.reorderSpreads(id, body.positions);
+    return this.albumPresenter.toDto(album);
+  }
+
+  @Patch(':id/workflow')
+  async updateWorkflow(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() body: UpdateAlbumWorkflowDto,
+  ): Promise<AlbumResponseDto> {
+    const album = await this.albumsService.updateWorkflow(id, body);
     return this.albumPresenter.toDto(album);
   }
 
