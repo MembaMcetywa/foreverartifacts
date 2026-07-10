@@ -3,8 +3,11 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { AlbumSpec, SQUARE_210_ALBUM_SPEC } from './album-spec';
 
 import {
+  ElementPlacement,
   LayoutLibrary,
   LayoutTemplate,
+  PageImageElementPlacement,
+  PageSide,
   SQUARE_210_LAYOUT_LIBRARY,
 } from './layout.templates';
 
@@ -153,4 +156,142 @@ export class LayoutRegistryService implements OnModuleInit {
   listTemplates(albumSpecId: string): LayoutTemplate[] {
     return this.getLayoutLibrary(albumSpecId).templates;
   }
+
+  listTemplatePreviews(albumSpecId: string): LayoutTemplatePreview[] {
+    const spec = this.getAlbumSpec(albumSpecId);
+
+    return this.listTemplates(albumSpecId).map((template) => ({
+      id: template.id,
+      name: template.name,
+      description: template.description,
+      imageSlots: template.imageSlots,
+      preview: {
+        widthRatio: 2,
+        heightRatio: 1,
+        slots: template.elements
+          .filter((element) => element.type === 'image')
+          .map((element) => ({
+            slotIndex: element.slotIndex,
+            rect: this.computePreviewRect(spec, element),
+          })),
+      },
+    }));
+  }
+
+  private computePreviewRect(
+    spec: AlbumSpec,
+    element: Extract<ElementPlacement, { type: 'image' }>,
+  ): PreviewRect {
+    const spreadWidthMm = spec.page.widthMm * 2;
+
+    if (element.placement === 'spread') {
+      const { outerMm } = spec.grid.margins;
+      const xMm = outerMm;
+      const yMm = this.computeY(spec, element);
+      const widthMm = spreadWidthMm - outerMm * 2;
+
+      return this.toPreviewRect(spec, {
+        xMm,
+        yMm,
+        widthMm,
+        heightMm: element.y.heightMm,
+      });
+    }
+
+    const xMm =
+      this.getPageOffsetMm(spec, element.pageSide) +
+      this.computeX(spec, element, element.pageSide);
+    const yMm = this.computeY(spec, element);
+    const widthMm = this.computeWidth(spec, element);
+
+    return this.toPreviewRect(spec, {
+      xMm,
+      yMm,
+      widthMm,
+      heightMm: element.y.heightMm,
+    });
+  }
+
+  private toPreviewRect(
+    spec: AlbumSpec,
+    rect: {
+      xMm: number;
+      yMm: number;
+      widthMm: number;
+      heightMm: number;
+    },
+  ): PreviewRect {
+    const spreadWidthMm = spec.page.widthMm * 2;
+
+    return {
+      left: (rect.xMm / spreadWidthMm) * 100,
+      top: (rect.yMm / spec.page.heightMm) * 100,
+      width: (rect.widthMm / spreadWidthMm) * 100,
+      height: (rect.heightMm / spec.page.heightMm) * 100,
+    };
+  }
+
+  private getPageOffsetMm(spec: AlbumSpec, side: PageSide): number {
+    return side === 'left' ? 0 : spec.page.widthMm;
+  }
+
+  private computeX(
+    spec: AlbumSpec,
+    element: PageImageElementPlacement,
+    side: PageSide,
+  ): number {
+    const { columnsPerPage, gutterMm, margins } = spec.grid;
+    const contentWidth = spec.page.widthMm - margins.innerMm - margins.outerMm;
+    const leftMargin = side === 'left' ? margins.outerMm : margins.innerMm;
+    const columnWidth =
+      (contentWidth - (columnsPerPage - 1) * gutterMm) / columnsPerPage;
+
+    return leftMargin + (element.x.cols.startCol - 1) * (columnWidth + gutterMm);
+  }
+
+  private computeWidth(
+    spec: AlbumSpec,
+    element: PageImageElementPlacement,
+  ): number {
+    const { columnsPerPage, gutterMm, margins } = spec.grid;
+    const contentWidth = spec.page.widthMm - margins.innerMm - margins.outerMm;
+    const columnWidth =
+      (contentWidth - (columnsPerPage - 1) * gutterMm) / columnsPerPage;
+
+    return element.x.cols.span * columnWidth + (element.x.cols.span - 1) * gutterMm;
+  }
+
+  private computeY(spec: AlbumSpec, element: ElementPlacement): number {
+    const { margins } = spec.grid;
+    const contentTop = margins.topMm;
+    const contentBottom = spec.page.heightMm - margins.bottomMm;
+
+    if (element.y.anchor === 'top') {
+      return contentTop + element.y.offsetMm;
+    }
+
+    return contentBottom - element.y.offsetMm - element.y.heightMm;
+  }
+}
+
+export interface LayoutTemplatePreview {
+  id: string;
+  name: string;
+  description: string;
+  imageSlots: number;
+  preview: {
+    widthRatio: number;
+    heightRatio: number;
+    slots: {
+      slotIndex: number;
+      rect: PreviewRect;
+    }[];
+  };
+}
+
+interface PreviewRect {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
 }
