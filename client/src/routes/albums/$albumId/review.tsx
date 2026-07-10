@@ -1,7 +1,33 @@
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  restrictToParentElement,
+  restrictToVerticalAxis,
+} from '@dnd-kit/modifiers'
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
 import { Link, createFileRoute } from '@tanstack/react-router'
 
 import { CreationShell } from '../../../components/CreationShell'
+import { ReviewSpread } from '../../../components/ReviewSpread'
+import { useReviewSpreadOrder } from '../../../hooks/useReviewSpreadOrder'
+import { useReviewWorkflowCheckpoint } from '../../../hooks/useReviewWorkflowCheckpoint'
 import { useAlbumQuery } from '../../../queries/albums'
+import { useLayoutTemplatesQuery } from '../../../queries/templates'
+import {
+  countCompletedSpreads,
+  getAlbumTitle,
+  getFirstEmptyPosition,
+  getPreviewSlotsForSpread,
+  getSpreadPositionId,
+} from '../../../utils/review-spreads'
 
 export const Route = createFileRoute('/albums/$albumId/review')({
   component: ReviewPage,
@@ -10,18 +36,29 @@ export const Route = createFileRoute('/albums/$albumId/review')({
 function ReviewPage() {
   const { albumId } = Route.useParams()
   const albumQuery = useAlbumQuery(albumId)
-  const albumTitle =
-    albumQuery.data?.albumName && albumQuery.data.albumName !== albumId
-      ? albumQuery.data.albumName
-      : 'Untitled'
-  const completedSpreads =
-    albumQuery.data?.spreadPositions.filter(
-      (spreadPosition) => spreadPosition.status === 'complete',
-    ).length ?? 0
-  const firstEmptyPosition = albumQuery.data?.spreadPositions.find(
-    (spreadPosition) => spreadPosition.status === 'empty',
-  )?.position
+  const templatesQuery = useLayoutTemplatesQuery(
+    albumQuery.data?.albumSpecId ?? null,
+  )
+  const { orderedSpreadPositions, reorderSpread } = useReviewSpreadOrder(
+    albumId,
+    albumQuery.data?.spreadPositions,
+  )
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        delay: 180,
+        tolerance: 8,
+      },
+    }),
+  )
+  const albumTitle = getAlbumTitle(albumQuery.data?.albumName, albumId)
+  const completedSpreads = countCompletedSpreads(albumQuery.data?.spreadPositions)
+  const firstEmptyPosition = getFirstEmptyPosition(
+    albumQuery.data?.spreadPositions,
+  )
   const isReadyForProof = completedSpreads === 12
+
+  useReviewWorkflowCheckpoint(albumId)
 
   return (
     <>
@@ -74,68 +111,32 @@ function ReviewPage() {
               </section>
             )}
 
-            <div className="review-spread-sequence">
-              {albumQuery.data.spreadPositions.map((spreadPosition) => (
-                <article
-                  key={spreadPosition.position}
-                  className="review-spread"
-                >
-                  <header className="review-spread__header">
-                    <p className="review-spread__number">
-                      Spread {String(spreadPosition.position).padStart(2, '0')}
-                    </p>
-                    {spreadPosition.spread && (
-                      <Link
-                        to="/albums/$albumId/arrange"
-                        params={{ albumId }}
-                        search={{
-                          spread: spreadPosition.position,
-                          returnTo: 'review',
-                        }}
-                        aria-label={`Edit spread ${spreadPosition.position}`}
-                      >
-                        <span>Edit</span>
-                      </Link>
-                    )}
-                  </header>
-
-                  <div className="review-spread__surface">
-                    <div className="review-spread__page" />
-                    <div className="review-spread__page" />
-
-                    {spreadPosition.spread && (
-                      <div
-                        className="review-spread__slots"
-                        data-layout={spreadPosition.spread.templateId}
-                      >
-                        {spreadPosition.spread.slots.map((slot) => (
-                          <div
-                            key={slot.id}
-                            className="review-spread__slot"
-                            data-slot={slot.slotIndex}
-                          >
-                            <img
-                              src={slot.asset.previewUrl}
-                              alt={`Photograph in spread ${spreadPosition.position}, slot ${slot.slotIndex + 1}`}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {!spreadPosition.spread && (
-                      <p className="review-spread__empty">Empty spread</p>
-                    )}
-                  </div>
-
-                  {spreadPosition.spread && (
-                    <p className="review-spread__meta">
-                      {spreadPosition.spread.templateId.replaceAll('_', ' ')}
-                    </p>
-                  )}
-                </article>
-              ))}
-            </div>
+            <DndContext
+              collisionDetection={closestCenter}
+              modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+              onDragEnd={reorderSpread}
+              sensors={sensors}
+            >
+              <SortableContext
+                items={orderedSpreadPositions.map(getSpreadPositionId)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="review-spread-sequence">
+                  {orderedSpreadPositions.map((spreadPosition, index) => (
+                    <ReviewSpread
+                      key={getSpreadPositionId(spreadPosition)}
+                      albumId={albumId}
+                      index={index}
+                      spreadPosition={spreadPosition}
+                      previewSlots={getPreviewSlotsForSpread(
+                        templatesQuery.data,
+                        spreadPosition,
+                      )}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
           </section>
         </CreationShell>
       )}
