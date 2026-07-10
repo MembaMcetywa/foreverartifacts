@@ -12,11 +12,13 @@ export function BookIndexRow({ album, index }: BookIndexRowProps) {
   const sequence = String(index + 1).padStart(2, '0')
   const progress = String(album.spreads.length).padStart(2, '0')
   const thumbnail = album.assets[0]?.previewUrl
+  const continueTarget = getContinueTarget(album)
 
   return (
     <Link
-      to="/albums/$albumId/photos"
-      params={{ albumId: album.id }}
+      to={continueTarget.to}
+      params={continueTarget.params}
+      search={continueTarget.search}
       className="books-index-row"
       aria-label={`Continue ${title}, ${album.spreads.length} of 12 spreads complete`}
     >
@@ -36,4 +38,30 @@ export function BookIndexRow({ album, index }: BookIndexRowProps) {
       <span className="books-index-row__continue">Continue</span>
     </Link>
   )
+}
+
+function getContinueTarget(album: Album) {
+  if (album.workflowStage === 'collect_photos') {
+    return {
+      to: '/albums/$albumId/photos' as const,
+      params: { albumId: album.id },
+      search: {},
+    }
+  }
+
+  if (album.workflowStage === 'compose_spreads') {
+    return {
+      to: '/albums/$albumId/arrange' as const,
+      params: { albumId: album.id },
+      search: album.activeSpreadPosition
+        ? { spread: album.activeSpreadPosition }
+        : {},
+    }
+  }
+
+  return {
+    to: '/albums/$albumId/review' as const,
+    params: { albumId: album.id },
+    search: {},
+  }
 }
