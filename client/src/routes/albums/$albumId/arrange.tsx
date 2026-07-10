@@ -6,7 +6,11 @@ import { useEffect, useState } from 'react'
 import { Button } from '../../../components/Button'
 import { CreationShell } from '../../../components/CreationShell'
 import { ModalWrapper } from '../../../components/ModalWrapper'
-import { useAlbumQuery } from '../../../queries/albums'
+import {
+  useAlbumQuery,
+  useUpdateAlbumWorkflowMutation,
+  writeAlbumToCache,
+} from '../../../queries/albums'
 import { useSaveSpreadAtPositionMutation } from '../../../queries/spreads'
 import { useLayoutTemplatesQuery } from '../../../queries/templates'
 
@@ -27,10 +31,11 @@ export const Route = createFileRoute('/albums/$albumId/arrange')({
 
 function ArrangePage() {
   const { albumId } = Route.useParams()
-  const { spread: requestedSpreadPosition } = Route.useSearch()
+  const { returnTo, spread: requestedSpreadPosition } = Route.useSearch()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const albumQuery = useAlbumQuery(albumId)
+  const updateWorkflowMutation = useUpdateAlbumWorkflowMutation()
   const saveSpreadMutation = useSaveSpreadAtPositionMutation()
   const templatesQuery = useLayoutTemplatesQuery(
     albumQuery.data?.albumSpecId ?? null,
@@ -75,6 +80,9 @@ function ArrangePage() {
     assignedAsset: albumQuery.data?.assets.find(
       (asset) => asset.assetId === slotAssignments[slotIndex],
     ),
+    previewSlot: selectedTemplate?.preview.slots.find(
+      (slot) => slot.slotIndex === slotIndex,
+    ),
   }))
   const originalTemplateId = activeSpreadRecord?.templateId ?? null
   const originalSlotAssignments = Object.fromEntries(
@@ -103,6 +111,20 @@ function ArrangePage() {
       setSelectedTemplateId(firstTemplate.id)
     }
   }, [selectedTemplateId, templatesQuery.data])
+
+  useEffect(() => {
+    updateWorkflowMutation.mutate(
+      {
+        albumId,
+        workflowStage:
+          returnTo === 'review' ? 'review_album' : 'compose_spreads',
+        activeSpreadPosition: activeSpreadPosition,
+      },
+      {
+        onSuccess: (album) => writeAlbumToCache(queryClient, album),
+      },
+    )
+  }, [activeSpreadPosition, albumId, queryClient, returnTo])
 
   useEffect(() => {
     if (activeSpreadRecord) {
@@ -325,7 +347,8 @@ function ArrangePage() {
                       data-layout={selectedTemplate?.id ?? 'empty'}
                       aria-label={`Spread ${activeSpreadPosition} photograph slots`}
                     >
-                      {spreadSlotItems.map(({ slotIndex, assignedAsset }) => (
+                      {spreadSlotItems.map(
+                        ({ slotIndex, assignedAsset, previewSlot }) => (
                         <button
                           key={slotIndex}
                           type="button"
@@ -333,6 +356,16 @@ function ArrangePage() {
                           data-slot={slotIndex}
                           data-active={slotIndex === activeSlotIndex}
                           aria-pressed={slotIndex === activeSlotIndex}
+                          style={
+                            previewSlot
+                              ? {
+                                  left: `${previewSlot.rect.left}%`,
+                                  top: `${previewSlot.rect.top}%`,
+                                  width: `${previewSlot.rect.width}%`,
+                                  height: `${previewSlot.rect.height}%`,
+                                }
+                              : undefined
+                          }
                           onClick={() => setActiveSlotIndex(slotIndex)}
                         >
                           {assignedAsset && (
@@ -343,7 +376,8 @@ function ArrangePage() {
                           )}
                           {!assignedAsset && <span>Slot {slotIndex + 1}</span>}
                         </button>
-                      ))}
+                        ),
+                      )}
                     </div>
                   </div>
                   <p>
@@ -412,7 +446,15 @@ function ArrangePage() {
                 <aside className="arrange-photo-tray" aria-label="Photographs">
                   <div className="arrange-photo-tray__header">
                     <h2>Photographs</h2>
-                    <Link to="/albums/$albumId/photos" params={{ albumId }}>
+                    <Link
+                      to="/albums/$albumId/photos"
+                      params={{ albumId }}
+                      search={
+                        returnTo === 'review'
+                          ? { spread: activeSpreadPosition, returnTo }
+                          : {}
+                      }
+                    >
                       Add photographs
                     </Link>
                   </div>
