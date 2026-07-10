@@ -3,6 +3,19 @@ export interface LayoutTemplate {
   name: string
   description: string
   imageSlots: number
+  preview: {
+    widthRatio: number
+    heightRatio: number
+    slots: {
+      slotIndex: number
+      rect: {
+        left: number
+        top: number
+        width: number
+        height: number
+      }
+    }[]
+  }
 }
 
 const API_BASE_URL =
