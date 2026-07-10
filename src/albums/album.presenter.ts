@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { StorageService } from '../storage/storage.service';
+import { AlbumWorkflowStage } from './album.types';
 import { AlbumResponseDto } from './albums.dto';
 import { AlbumsService } from './albums.service';
 
@@ -53,6 +54,8 @@ export class AlbumPresenter {
       albumName: album.albumName,
       albumSpecId: album.albumSpecId,
       state: album.state,
+      workflowStage: album.workflowStage as AlbumWorkflowStage,
+      activeSpreadPosition: album.activeSpreadPosition,
       createdAt: album.createdAt,
       updatedAt: album.updatedAt,
       assets,
