@@ -29,6 +29,8 @@ model Album {
   albumName   String
   albumSpecId String
   state       String
+  workflowStage String @default("collect_photos")
+  activeSpreadPosition Int?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
