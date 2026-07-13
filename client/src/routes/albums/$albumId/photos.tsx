@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Button } from '../../../components/Button'
 import { CreationShell } from '../../../components/CreationShell'
 import { SelectedPhotograph } from '../../../components/SelectedPhotograph'
+import { useAlbumNameEditor } from '../../../hooks/useAlbumNameEditor'
 import {
   useAddAlbumAssetsMutation,
   useAlbumQuery,
@@ -47,6 +48,7 @@ function PhotographsPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const albumQuery = useAlbumQuery(albumId)
+  const { saveAlbumName, savingAlbumName } = useAlbumNameEditor(albumId)
   const addAlbumAssetsMutation = useAddAlbumAssetsMutation()
   const updateWorkflowMutation = useUpdateAlbumWorkflowMutation()
   const uploadAssetMutation = useUploadAssetMutation()
@@ -224,7 +226,12 @@ function PhotographsPage() {
       )}
 
       {albumQuery.data && (
-        <CreationShell stage="Photographs · 1 of 5" title={albumTitle}>
+        <CreationShell
+          stage="Photographs · 1 of 5"
+          title={albumTitle}
+          titleSaving={savingAlbumName}
+          onTitleSave={saveAlbumName}
+        >
           <section className="photographs-workspace">
             <header className="photographs-workspace__header">
               <div>
