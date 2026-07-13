@@ -1,8 +1,17 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 
+import type { Album } from '../../api/albums'
 import { BookIndexRow } from '../../components/BookIndexRow'
 import { Button } from '../../components/Button'
-import { useAlbumsQuery, useCreateAlbumMutation } from '../../queries/albums'
+import { ModalWrapper } from '../../components/ModalWrapper'
+import {
+  removeAlbumFromCache,
+  useAlbumsQuery,
+  useCreateAlbumMutation,
+  useDeleteAlbumMutation,
+} from '../../queries/albums'
 
 export const Route = createFileRoute('/create/')({
   component: CreatePage,
@@ -12,8 +21,13 @@ const ALBUM_SPEC_ID = 'square_210_v1'
 
 function CreatePage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const [albumPendingDelete, setAlbumPendingDelete] = useState<Album | null>(
+    null,
+  )
   const albumsQuery = useAlbumsQuery()
   const createAlbumMutation = useCreateAlbumMutation()
+  const deleteAlbumMutation = useDeleteAlbumMutation()
   const bookCount = albumsQuery.data?.length ?? 0
 
   function openPhotographs(albumId: string) {
@@ -33,6 +47,32 @@ function CreatePage() {
         onSuccess: (album) => openPhotographs(album.id),
       },
     )
+  }
+
+  function closeDeleteModal() {
+    if (!deleteAlbumMutation.isPending) {
+      deleteAlbumMutation.reset()
+      setAlbumPendingDelete(null)
+    }
+  }
+
+  function openDeleteModal(album: Album) {
+    deleteAlbumMutation.reset()
+    setAlbumPendingDelete(album)
+  }
+
+  function confirmDeleteAlbum() {
+    if (!albumPendingDelete) {
+      return
+    }
+
+    deleteAlbumMutation.mutate(albumPendingDelete.id, {
+      onSuccess: () => {
+        removeAlbumFromCache(queryClient, albumPendingDelete.id)
+        queryClient.invalidateQueries({ queryKey: ['albums'] })
+        setAlbumPendingDelete(null)
+      },
+    })
   }
 
   return (
@@ -109,11 +149,51 @@ function CreatePage() {
         {albumsQuery.data && albumsQuery.data.length > 0 && (
           <div className="books-archive__rows">
             {albumsQuery.data.map((album, index) => (
-              <BookIndexRow key={album.id} album={album} index={index} />
+              <BookIndexRow
+                key={album.id}
+                album={album}
+                index={index}
+                onDelete={() => openDeleteModal(album)}
+              />
             ))}
           </div>
         )}
       </section>
+
+      <ModalWrapper
+        open={Boolean(albumPendingDelete)}
+        title="Delete book"
+        onClose={closeDeleteModal}
+      >
+        <div className="books-delete-dialog">
+          <p>
+            This will delete the book from your archive, including its spreads.
+            This action cannot be undone.
+          </p>
+          <div className="books-delete-dialog__actions">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={deleteAlbumMutation.isPending}
+              onClick={closeDeleteModal}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              loading={deleteAlbumMutation.isPending}
+              onClick={confirmDeleteAlbum}
+            >
+              Yes, delete
+            </Button>
+          </div>
+          {deleteAlbumMutation.isError && (
+            <p className="books-delete-dialog__status" role="status">
+              The book could not be deleted. Try again.
+            </p>
+          )}
+        </div>
+      </ModalWrapper>
     </main>
   )
 }
