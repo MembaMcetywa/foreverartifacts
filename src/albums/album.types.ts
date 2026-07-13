@@ -16,11 +16,22 @@ export const ALBUM_WORKFLOW_STAGES = [
   'collect_photos',
   'compose_spreads',
   'review_album',
-  'proof_album',
+  'render_album',
   'ready_to_order',
 ] as const;
 
 export type AlbumWorkflowStage = (typeof ALBUM_WORKFLOW_STAGES)[number];
+
+export const ALBUM_RENDER_STATUSES = [
+  'not_started',
+  'rendering',
+  'ready',
+  'failed',
+  'stale',
+  'approved',
+] as const;
+
+export type AlbumRenderStatus = (typeof ALBUM_RENDER_STATUSES)[number];
 
 export interface Album {
   id: string;
@@ -28,6 +39,11 @@ export interface Album {
   state: AlbumState;
   workflowStage: AlbumWorkflowStage;
   activeSpreadPosition: number | null;
+  renderStatus: AlbumRenderStatus;
+  renderId: string | null;
+  renderArtifactKey: string | null;
+  renderCompletedAt: Date | null;
+  renderApprovedAt: Date | null;
   spreads: AlbumSpread[];
   createdAt: Date;
   updatedAt: Date;

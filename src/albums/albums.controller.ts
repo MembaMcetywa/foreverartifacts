@@ -11,7 +11,6 @@ import {
   Put,
 } from '@nestjs/common';
 
-import { RenderService } from '../render/render.service';
 import { AlbumPresenter } from './album.presenter';
 import {
   AddAlbumAssetsDto,
@@ -19,6 +18,7 @@ import {
   AlbumResponseDto,
   CreateAlbumDto,
   ReorderAlbumSpreadsDto,
+  UpdateAlbumNameDto,
   UpdateAlbumSpreadDto,
   UpdateAlbumWorkflowDto,
 } from './albums.dto';
@@ -28,7 +28,6 @@ import { AlbumsService } from './albums.service';
 export class AlbumsController {
   constructor(
     private readonly albumsService: AlbumsService,
-    private readonly renderService: RenderService,
     private readonly albumPresenter: AlbumPresenter,
   ) {}
 
@@ -112,6 +111,22 @@ export class AlbumsController {
     return this.albumPresenter.toDto(album);
   }
 
+  @Patch(':id/name')
+  async updateName(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() body: UpdateAlbumNameDto,
+  ): Promise<AlbumResponseDto> {
+    const album = await this.albumsService.updateAlbumName(id, body);
+    return this.albumPresenter.toDto(album);
+  }
+
+  @Delete(':id')
+  async deleteAlbum(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ): Promise<void> {
+    await this.albumsService.deleteAlbum(id);
+  }
+
   @Delete(':id/spreads')
   async clearSpreads(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
@@ -120,19 +135,19 @@ export class AlbumsController {
     return this.albumPresenter.toDto(album);
   }
 
-  @Post(':id/render')
-  async render(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
-    const album = await this.albumsService.getAlbum(id);
+  @Post(':id/render/start')
+  async startRender(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ): Promise<AlbumResponseDto> {
+    const album = await this.albumsService.startRender(id);
+    return this.albumPresenter.toDto(album);
+  }
 
-    return this.renderService.renderAlbum({
-      albumSpecId: album.albumSpecId,
-      spreads: album.spreads.map((spread) => ({
-        templateId: spread.templateId,
-        slots: spread.slots.map((slot) => ({
-          slotIndex: slot.slotIndex,
-          assetId: slot.assetId,
-        })),
-      })),
-    });
+  @Post(':id/render/approve')
+  async approveRender(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ): Promise<AlbumResponseDto> {
+    const album = await this.albumsService.approveRender(id);
+    return this.albumPresenter.toDto(album);
   }
 }

@@ -10,12 +10,14 @@ import {
   IsString,
   IsUUID,
   Max,
+  MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
 
 import {
   ALBUM_WORKFLOW_STAGES,
+  AlbumRenderStatus,
   AlbumWorkflowStage,
 } from './album.types';
 
@@ -90,6 +92,13 @@ export class UpdateAlbumWorkflowDto {
   activeSpreadPosition?: number | null;
 }
 
+export class UpdateAlbumNameDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  albumName: string;
+}
+
 export interface AlbumResponseDto {
   id: string;
   albumName: string;
@@ -97,6 +106,9 @@ export interface AlbumResponseDto {
   state: string;
   workflowStage: AlbumWorkflowStage;
   activeSpreadPosition: number | null;
+  renderStatus: AlbumRenderStatus;
+  renderCompletedAt: Date | null;
+  renderApprovedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
   assets: {
@@ -143,3 +155,5 @@ export interface AlbumResponseDto {
     } | null;
   }[];
 }
+
+

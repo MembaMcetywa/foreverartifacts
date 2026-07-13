@@ -7,6 +7,7 @@ import { randomUUID } from 'crypto';
 
 import { PrismaService } from '../database/prisma.service';
 import { LayoutRegistryService } from '../layout/layout.registry.service';
+import { RenderService } from '../render/render.service';
 import { AlbumSpread, AlbumState, AlbumWorkflowStage } from './album.types';
 
 const INTERIOR_SPREAD_COUNT = 12;
@@ -26,11 +27,16 @@ interface UpdateWorkflowInput {
   activeSpreadPosition?: number | null;
 }
 
+interface UpdateAlbumNameInput {
+  albumName: string;
+}
+
 @Injectable()
 export class AlbumsService {
   constructor(
     private readonly layoutRegistry: LayoutRegistryService,
     private readonly prisma: PrismaService,
+    private readonly renderService: RenderService,
   ) {}
 
   async createAlbum(input: CreateAlbumInput) {
@@ -45,6 +51,7 @@ export class AlbumsService {
         albumSpecId: input.albumSpecId,
         state: 'draft',
         workflowStage: 'collect_photos',
+        renderStatus: 'not_started',
         assets: {
           create: input.assetIds.map((assetId, index) => ({
             id: randomUUID(),
@@ -68,6 +75,14 @@ export class AlbumsService {
     }
 
     return album;
+  }
+
+  async deleteAlbum(albumId: string) {
+    await this.getAlbum(albumId);
+
+    await this.prisma.album.delete({
+      where: { id: albumId },
+    });
   }
 
   async addAssets(albumId: string, assetIds: string[]) {
@@ -110,6 +125,7 @@ export class AlbumsService {
           order: nextOrder + index,
         })),
       });
+      await this.markRenderStale(albumId);
     }
 
     return this.getAlbum(albumId);
@@ -146,6 +162,7 @@ export class AlbumsService {
         },
       },
     });
+    await this.markRenderStale(albumId);
 
     return this.getAlbum(albumId);
   }
@@ -202,6 +219,8 @@ export class AlbumsService {
       });
     }
 
+    await this.markRenderStale(albumId);
+
     return this.getAlbum(albumId);
   }
 
@@ -237,6 +256,7 @@ export class AlbumsService {
         },
       }),
     ]);
+    await this.markRenderStale(albumId);
 
     return this.getAlbum(albumId);
   }
@@ -293,6 +313,7 @@ export class AlbumsService {
         }),
       ),
     ]);
+    await this.markRenderStale(albumId);
 
     return this.getAlbum(albumId);
   }
@@ -303,6 +324,7 @@ export class AlbumsService {
     await this.prisma.albumSpread.deleteMany({
       where: { albumId },
     });
+    await this.markRenderStale(albumId);
 
     return this.getAlbum(albumId);
   }
@@ -332,6 +354,96 @@ export class AlbumsService {
       data: {
         workflowStage: input.workflowStage,
         activeSpreadPosition: input.activeSpreadPosition ?? null,
+      },
+      include: this.albumInclude(),
+    });
+  }
+
+  async updateAlbumName(albumId: string, input: UpdateAlbumNameInput) {
+    await this.getAlbum(albumId);
+    const albumName = input.albumName.trim();
+
+    if (!albumName) {
+      throw new BadRequestException('Album name is required.');
+    }
+
+    return this.prisma.album.update({
+      where: { id: albumId },
+      data: { albumName },
+      include: this.albumInclude(),
+    });
+  }
+
+  async startRender(albumId: string) {
+    const album = await this.getAlbum(albumId);
+    this.assertReadyForRender(album);
+
+    await this.prisma.album.update({
+      where: { id: albumId },
+      data: {
+        workflowStage: 'render_album',
+        activeSpreadPosition: null,
+        renderStatus: 'rendering',
+        renderApprovedAt: null,
+      },
+    });
+
+    try {
+      const render = await this.renderService.renderAlbum({
+        albumSpecId: album.albumSpecId,
+        spreads: album.spreads.map((spread) => ({
+          templateId: spread.templateId,
+          slots: spread.slots.map((slot) => ({
+            slotIndex: slot.slotIndex,
+            assetId: slot.assetId,
+          })),
+        })),
+      });
+
+      return this.prisma.album.update({
+        where: { id: albumId },
+        data: {
+          workflowStage: 'render_album',
+          renderStatus: 'ready',
+          renderId: render.renderId,
+          renderArtifactKey: render.pdfKey,
+          renderCompletedAt: new Date(),
+          renderApprovedAt: null,
+        },
+        include: this.albumInclude(),
+      });
+    } catch (error) {
+      await this.prisma.album.update({
+        where: { id: albumId },
+        data: {
+          renderStatus: 'failed',
+        },
+      });
+
+      throw error;
+    }
+  }
+
+  async approveRender(albumId: string) {
+    const album = await this.getAlbum(albumId);
+
+    if (album.renderStatus !== 'ready') {
+      throw new BadRequestException(
+        'The book PDF must be rendered before continuing to order.',
+      );
+    }
+
+    if (!album.renderArtifactKey || !album.renderId) {
+      throw new BadRequestException('The rendered PDF is missing.');
+    }
+
+    return this.prisma.album.update({
+      where: { id: albumId },
+      data: {
+        workflowStage: 'ready_to_order',
+        activeSpreadPosition: null,
+        renderStatus: 'approved',
+        renderApprovedAt: new Date(),
       },
       include: this.albumInclude(),
     });
@@ -418,6 +530,31 @@ export class AlbumsService {
     }
   }
 
+  private assertReadyForRender(
+    album: Awaited<ReturnType<AlbumsService['getAlbum']>>,
+  ) {
+    if (album.spreads.length !== INTERIOR_SPREAD_COUNT) {
+      throw new BadRequestException(
+        `All ${INTERIOR_SPREAD_COUNT} spreads must be complete before continuing.`,
+      );
+    }
+  }
+
+  private async markRenderStale(albumId: string) {
+    await this.prisma.album.updateMany({
+      where: {
+        id: albumId,
+        renderStatus: {
+          in: ['ready', 'approved'],
+        },
+      },
+      data: {
+        renderStatus: 'stale',
+        renderApprovedAt: null,
+      },
+    });
+  }
+
   private getOrderForPosition(position: number) {
     if (
       !Number.isInteger(position) ||
@@ -432,3 +569,5 @@ export class AlbumsService {
     return position - 1;
   }
 }
+
+
