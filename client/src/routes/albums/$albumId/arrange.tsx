@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '../../../components/Button'
 import { CreationShell } from '../../../components/CreationShell'
 import { ModalWrapper } from '../../../components/ModalWrapper'
+import { useAlbumNameEditor } from '../../../hooks/useAlbumNameEditor'
 import {
   useAlbumQuery,
   useUpdateAlbumWorkflowMutation,
@@ -35,6 +36,7 @@ function ArrangePage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const albumQuery = useAlbumQuery(albumId)
+  const { saveAlbumName, savingAlbumName } = useAlbumNameEditor(albumId)
   const updateWorkflowMutation = useUpdateAlbumWorkflowMutation()
   const saveSpreadMutation = useSaveSpreadAtPositionMutation()
   const templatesQuery = useLayoutTemplatesQuery(
@@ -228,7 +230,12 @@ function ArrangePage() {
       )}
 
       {albumQuery.data && (
-        <CreationShell stage="Arrange - 2 of 5" title={albumTitle}>
+        <CreationShell
+          stage="Arrange - 2 of 5"
+          title={albumTitle}
+          titleSaving={savingAlbumName}
+          onTitleSave={saveAlbumName}
+        >
           <section className="arrange-workspace">
             {!shouldShowCompletion && (
               <header className="arrange-workspace__header">
@@ -250,7 +257,7 @@ function ArrangePage() {
                 <div>
                   <h2>All 12 spreads are complete</h2>
                   <p>
-                    Review the full book sequence before generating your proof
+                    Review the full book sequence before generating your render
                     PDF.
                   </p>
                 </div>
@@ -491,3 +498,4 @@ function ArrangePage() {
     </>
   )
 }
+
