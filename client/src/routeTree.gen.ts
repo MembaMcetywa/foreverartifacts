@@ -14,6 +14,7 @@ import { Route as CreateIndexRouteImport } from './routes/create/index'
 import { Route as CreateAlbumRouteImport } from './routes/create/album'
 import { Route as AlbumsAlbumIdReviewRouteImport } from './routes/albums/$albumId/review'
 import { Route as AlbumsAlbumIdPhotosRouteImport } from './routes/albums/$albumId/photos'
+import { Route as AlbumsAlbumIdCompleteRouteImport } from './routes/albums/$albumId/complete'
 import { Route as AlbumsAlbumIdArrangeRouteImport } from './routes/albums/$albumId/arrange'
 
 const IndexRoute = IndexRouteImport.update({
@@ -41,6 +42,11 @@ const AlbumsAlbumIdPhotosRoute = AlbumsAlbumIdPhotosRouteImport.update({
   path: '/albums/$albumId/photos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AlbumsAlbumIdCompleteRoute = AlbumsAlbumIdCompleteRouteImport.update({
+  id: '/albums/$albumId/complete',
+  path: '/albums/$albumId/complete',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AlbumsAlbumIdArrangeRoute = AlbumsAlbumIdArrangeRouteImport.update({
   id: '/albums/$albumId/arrange',
   path: '/albums/$albumId/arrange',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/create/album': typeof CreateAlbumRoute
   '/create/': typeof CreateIndexRoute
   '/albums/$albumId/arrange': typeof AlbumsAlbumIdArrangeRoute
+  '/albums/$albumId/complete': typeof AlbumsAlbumIdCompleteRoute
   '/albums/$albumId/photos': typeof AlbumsAlbumIdPhotosRoute
   '/albums/$albumId/review': typeof AlbumsAlbumIdReviewRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/create/album': typeof CreateAlbumRoute
   '/create': typeof CreateIndexRoute
   '/albums/$albumId/arrange': typeof AlbumsAlbumIdArrangeRoute
+  '/albums/$albumId/complete': typeof AlbumsAlbumIdCompleteRoute
   '/albums/$albumId/photos': typeof AlbumsAlbumIdPhotosRoute
   '/albums/$albumId/review': typeof AlbumsAlbumIdReviewRoute
 }
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/create/album': typeof CreateAlbumRoute
   '/create/': typeof CreateIndexRoute
   '/albums/$albumId/arrange': typeof AlbumsAlbumIdArrangeRoute
+  '/albums/$albumId/complete': typeof AlbumsAlbumIdCompleteRoute
   '/albums/$albumId/photos': typeof AlbumsAlbumIdPhotosRoute
   '/albums/$albumId/review': typeof AlbumsAlbumIdReviewRoute
 }
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/create/album'
     | '/create/'
     | '/albums/$albumId/arrange'
+    | '/albums/$albumId/complete'
     | '/albums/$albumId/photos'
     | '/albums/$albumId/review'
   fileRoutesByTo: FileRoutesByTo
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/create/album'
     | '/create'
     | '/albums/$albumId/arrange'
+    | '/albums/$albumId/complete'
     | '/albums/$albumId/photos'
     | '/albums/$albumId/review'
   id:
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/create/album'
     | '/create/'
     | '/albums/$albumId/arrange'
+    | '/albums/$albumId/complete'
     | '/albums/$albumId/photos'
     | '/albums/$albumId/review'
   fileRoutesById: FileRoutesById
@@ -104,6 +116,7 @@ export interface RootRouteChildren {
   CreateAlbumRoute: typeof CreateAlbumRoute
   CreateIndexRoute: typeof CreateIndexRoute
   AlbumsAlbumIdArrangeRoute: typeof AlbumsAlbumIdArrangeRoute
+  AlbumsAlbumIdCompleteRoute: typeof AlbumsAlbumIdCompleteRoute
   AlbumsAlbumIdPhotosRoute: typeof AlbumsAlbumIdPhotosRoute
   AlbumsAlbumIdReviewRoute: typeof AlbumsAlbumIdReviewRoute
 }
@@ -145,6 +158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AlbumsAlbumIdPhotosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/albums/$albumId/complete': {
+      id: '/albums/$albumId/complete'
+      path: '/albums/$albumId/complete'
+      fullPath: '/albums/$albumId/complete'
+      preLoaderRoute: typeof AlbumsAlbumIdCompleteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/albums/$albumId/arrange': {
       id: '/albums/$albumId/arrange'
       path: '/albums/$albumId/arrange'
@@ -160,6 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   CreateAlbumRoute: CreateAlbumRoute,
   CreateIndexRoute: CreateIndexRoute,
   AlbumsAlbumIdArrangeRoute: AlbumsAlbumIdArrangeRoute,
+  AlbumsAlbumIdCompleteRoute: AlbumsAlbumIdCompleteRoute,
   AlbumsAlbumIdPhotosRoute: AlbumsAlbumIdPhotosRoute,
   AlbumsAlbumIdReviewRoute: AlbumsAlbumIdReviewRoute,
 }
