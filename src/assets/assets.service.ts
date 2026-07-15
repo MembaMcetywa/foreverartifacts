@@ -37,6 +37,7 @@ export interface CompleteAssetResult {
 }
 
 interface CreateUploadUrlInput {
+  userId: string;
   filename: string;
   contentType: string;
 }
@@ -71,6 +72,7 @@ export class AssetsService {
     await this.prisma.asset.create({
       data: {
         id: assetId,
+        userId: input.userId,
         key,
         contentType: input.contentType,
         status: 'pending',
@@ -80,9 +82,12 @@ export class AssetsService {
     return { assetId, uploadUrl };
   }
 
-  async completeUpload(assetId: string): Promise<CompleteAssetResult> {
-    const asset = await this.prisma.asset.findUnique({
-      where: { id: assetId },
+  async completeUpload(
+    userId: string,
+    assetId: string,
+  ): Promise<CompleteAssetResult> {
+    const asset = await this.prisma.asset.findFirst({
+      where: { id: assetId, userId },
     });
 
     if (!asset) {
@@ -100,6 +105,7 @@ export class AssetsService {
     const claimed = await this.prisma.asset.updateMany({
       where: {
         id: assetId,
+        userId,
         OR: [
           { status: { in: ['pending', 'failed'] } },
           {
@@ -181,9 +187,9 @@ export class AssetsService {
     }
   }
 
-  async deleteAsset(assetId: string): Promise<void> {
-    const asset = await this.prisma.asset.findUnique({
-      where: { id: assetId },
+  async deleteAsset(userId: string, assetId: string): Promise<void> {
+    const asset = await this.prisma.asset.findFirst({
+      where: { id: assetId, userId },
     });
 
     if (!asset) return;
@@ -193,9 +199,9 @@ export class AssetsService {
     });
   }
 
-  async getAsset(assetId: string): Promise<AssetRecord> {
-    const asset = await this.prisma.asset.findUnique({
-      where: { id: assetId },
+  async getAsset(userId: string, assetId: string): Promise<AssetRecord> {
+    const asset = await this.prisma.asset.findFirst({
+      where: { id: assetId, userId },
     });
 
     if (!asset) {
