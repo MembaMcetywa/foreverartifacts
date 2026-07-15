@@ -42,7 +42,7 @@ function Home() {
               hand crafted book you can hold, revisit and keep.
             </p>
 
-            <Link to={'#product' as '/'} className="fa-button">
+            <Link to="/create" className="fa-button">
               Create Your Photo Book
             </Link>
           </div>
@@ -124,7 +124,7 @@ function Home() {
           <h2 className="fa-closing-title">
             Choose the photographs you want to keep close.
           </h2>
-          <Link to={'#' as '/'} className="fa-button">
+          <Link to="/create" className="fa-button">
             Create Your Artifact
           </Link>
         </div>
