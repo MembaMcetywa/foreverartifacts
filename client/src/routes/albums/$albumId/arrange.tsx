@@ -3,6 +3,7 @@ import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { ChevronDown } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
+import { ArrangePhotoTray } from '../../../components/ArrangePhotoTray'
 import { Button } from '../../../components/Button'
 import { CreationShell } from '../../../components/CreationShell'
 import { ModalWrapper } from '../../../components/ModalWrapper'
@@ -450,46 +451,13 @@ function ArrangePage() {
                   </div>
                 </div>
 
-                <aside className="arrange-photo-tray" aria-label="Photographs">
-                  <div className="arrange-photo-tray__header">
-                    <h2>Photographs</h2>
-                    <Link
-                      to="/albums/$albumId/photos"
-                      params={{ albumId }}
-                      search={
-                        returnTo === 'review'
-                          ? { spread: activeSpreadPosition, returnTo }
-                          : {}
-                      }
-                    >
-                      Add photographs
-                    </Link>
-                  </div>
-
-                  {albumQuery.data.assets.length === 0 && (
-                    <p className="arrange-photo-tray__empty">
-                      No uploaded photographs yet.
-                    </p>
-                  )}
-
-                  {albumQuery.data.assets.length > 0 && (
-                    <div className="arrange-photo-tray__grid">
-                      {albumQuery.data.assets.slice(0, 12).map((asset) => (
-                        <button
-                          key={asset.assetId}
-                          type="button"
-                          className="arrange-photo-tray__item"
-                          onClick={() => placePhotograph(asset.assetId)}
-                        >
-                          <img
-                            src={asset.previewUrl}
-                            alt={`Uploaded photograph ${asset.order + 1}`}
-                          />
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </aside>
+                <ArrangePhotoTray
+                  activeSpreadPosition={activeSpreadPosition}
+                  albumId={albumId}
+                  assets={albumQuery.data.assets}
+                  returnTo={returnTo}
+                  onSelectAsset={placePhotograph}
+                />
               </div>
             )}
           </section>
