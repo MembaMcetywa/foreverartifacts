@@ -9,8 +9,10 @@ import {
   Patch,
   Post,
   Put,
+  Req,
 } from '@nestjs/common';
 
+import { AuthenticatedRequest } from '../auth/auth.types';
 import { AlbumPresenter } from './album.presenter';
 import {
   AddAlbumAssetsDto,
@@ -32,22 +34,31 @@ export class AlbumsController {
   ) {}
 
   @Post()
-  async create(@Body() body: CreateAlbumDto): Promise<AlbumResponseDto> {
-    const album = await this.albumsService.createAlbum(body);
+  async create(
+    @Body() body: CreateAlbumDto,
+    @Req() request: AuthenticatedRequest,
+  ): Promise<AlbumResponseDto> {
+    const album = await this.albumsService.createAlbum({
+      ...body,
+      userId: request.user.id,
+    });
     return this.albumPresenter.toDto(album);
   }
 
   @Get()
-  async list(): Promise<AlbumResponseDto[]> {
-    const albums = await this.albumsService.listAlbums();
+  async list(
+    @Req() request: AuthenticatedRequest,
+  ): Promise<AlbumResponseDto[]> {
+    const albums = await this.albumsService.listAlbums(request.user.id);
     return Promise.all(albums.map((album) => this.albumPresenter.toDto(album)));
   }
 
   @Get(':id')
   async get(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Req() request: AuthenticatedRequest,
   ): Promise<AlbumResponseDto> {
-    const album = await this.albumsService.getAlbum(id);
+    const album = await this.albumsService.getAlbum(request.user.id, id);
     return this.albumPresenter.toDto(album);
   }
 
@@ -55,8 +66,13 @@ export class AlbumsController {
   async addAssets(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() body: AddAlbumAssetsDto,
+    @Req() request: AuthenticatedRequest,
   ): Promise<AlbumResponseDto> {
-    const album = await this.albumsService.addAssets(id, body.assetIds);
+    const album = await this.albumsService.addAssets(
+      request.user.id,
+      id,
+      body.assetIds,
+    );
     return this.albumPresenter.toDto(album);
   }
 
@@ -64,8 +80,13 @@ export class AlbumsController {
   async addSpread(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() spread: AddAlbumSpreadDto,
+    @Req() request: AuthenticatedRequest,
   ): Promise<AlbumResponseDto> {
-    const album = await this.albumsService.addSpread(id, spread);
+    const album = await this.albumsService.addSpread(
+      request.user.id,
+      id,
+      spread,
+    );
     return this.albumPresenter.toDto(album);
   }
 
@@ -74,8 +95,10 @@ export class AlbumsController {
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Param('position', ParseIntPipe) position: number,
     @Body() spread: UpdateAlbumSpreadDto,
+    @Req() request: AuthenticatedRequest,
   ): Promise<AlbumResponseDto> {
     const album = await this.albumsService.saveSpreadAtPosition(
+      request.user.id,
       id,
       position,
       spread,
@@ -88,8 +111,14 @@ export class AlbumsController {
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Param('spreadId', new ParseUUIDPipe({ version: '4' })) spreadId: string,
     @Body() spread: UpdateAlbumSpreadDto,
+    @Req() request: AuthenticatedRequest,
   ): Promise<AlbumResponseDto> {
-    const album = await this.albumsService.updateSpread(id, spreadId, spread);
+    const album = await this.albumsService.updateSpread(
+      request.user.id,
+      id,
+      spreadId,
+      spread,
+    );
     return this.albumPresenter.toDto(album);
   }
 
@@ -97,8 +126,13 @@ export class AlbumsController {
   async reorderSpreads(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() body: ReorderAlbumSpreadsDto,
+    @Req() request: AuthenticatedRequest,
   ): Promise<AlbumResponseDto> {
-    const album = await this.albumsService.reorderSpreads(id, body.positions);
+    const album = await this.albumsService.reorderSpreads(
+      request.user.id,
+      id,
+      body.positions,
+    );
     return this.albumPresenter.toDto(album);
   }
 
@@ -106,8 +140,13 @@ export class AlbumsController {
   async updateWorkflow(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() body: UpdateAlbumWorkflowDto,
+    @Req() request: AuthenticatedRequest,
   ): Promise<AlbumResponseDto> {
-    const album = await this.albumsService.updateWorkflow(id, body);
+    const album = await this.albumsService.updateWorkflow(
+      request.user.id,
+      id,
+      body,
+    );
     return this.albumPresenter.toDto(album);
   }
 
@@ -115,39 +154,48 @@ export class AlbumsController {
   async updateName(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() body: UpdateAlbumNameDto,
+    @Req() request: AuthenticatedRequest,
   ): Promise<AlbumResponseDto> {
-    const album = await this.albumsService.updateAlbumName(id, body);
+    const album = await this.albumsService.updateAlbumName(
+      request.user.id,
+      id,
+      body,
+    );
     return this.albumPresenter.toDto(album);
   }
 
   @Delete(':id')
   async deleteAlbum(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Req() request: AuthenticatedRequest,
   ): Promise<void> {
-    await this.albumsService.deleteAlbum(id);
+    await this.albumsService.deleteAlbum(request.user.id, id);
   }
 
   @Delete(':id/spreads')
   async clearSpreads(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Req() request: AuthenticatedRequest,
   ): Promise<AlbumResponseDto> {
-    const album = await this.albumsService.clearSpreads(id);
+    const album = await this.albumsService.clearSpreads(request.user.id, id);
     return this.albumPresenter.toDto(album);
   }
 
   @Post(':id/render/start')
   async startRender(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Req() request: AuthenticatedRequest,
   ): Promise<AlbumResponseDto> {
-    const album = await this.albumsService.startRender(id);
+    const album = await this.albumsService.startRender(request.user.id, id);
     return this.albumPresenter.toDto(album);
   }
 
   @Post(':id/render/approve')
   async approveRender(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Req() request: AuthenticatedRequest,
   ): Promise<AlbumResponseDto> {
-    const album = await this.albumsService.approveRender(id);
+    const album = await this.albumsService.approveRender(request.user.id, id);
     return this.albumPresenter.toDto(album);
   }
 }
