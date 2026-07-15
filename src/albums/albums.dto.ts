@@ -5,17 +5,34 @@ import {
   IsArray,
   IsInt,
   IsNotEmpty,
+  IsIn,
+  IsOptional,
   IsString,
   IsUUID,
+  Max,
+  MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
+
+import {
+  ALBUM_WORKFLOW_STAGES,
+  AlbumRenderStatus,
+  AlbumWorkflowStage,
+} from './album.types';
 
 export class CreateAlbumDto {
   @IsString()
   @IsNotEmpty()
   albumSpecId: string;
 
+  @IsArray()
+  @ArrayUnique()
+  @IsUUID('4', { each: true })
+  assetIds: string[];
+}
+
+export class AddAlbumAssetsDto {
   @IsArray()
   @ArrayNotEmpty()
   @ArrayUnique()
@@ -44,11 +61,54 @@ export class AddAlbumSpreadDto {
   slots: AlbumSpreadSlotDto[];
 }
 
+export class UpdateAlbumSpreadDto extends AddAlbumSpreadDto {}
+
+export class AlbumSpreadOrderPositionDto {
+  @IsInt()
+  @Min(1)
+  @Max(12)
+  position: number;
+
+  @IsUUID('4')
+  spreadId: string;
+}
+
+export class ReorderAlbumSpreadsDto {
+  @IsArray()
+  @ArrayNotEmpty()
+  @ValidateNested({ each: true })
+  @Type(() => AlbumSpreadOrderPositionDto)
+  positions: AlbumSpreadOrderPositionDto[];
+}
+
+export class UpdateAlbumWorkflowDto {
+  @IsIn(ALBUM_WORKFLOW_STAGES)
+  workflowStage: AlbumWorkflowStage;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(12)
+  activeSpreadPosition?: number | null;
+}
+
+export class UpdateAlbumNameDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  albumName: string;
+}
+
 export interface AlbumResponseDto {
   id: string;
   albumName: string;
   albumSpecId: string;
   state: string;
+  workflowStage: AlbumWorkflowStage;
+  activeSpreadPosition: number | null;
+  renderStatus: AlbumRenderStatus;
+  renderCompletedAt: Date | null;
+  renderApprovedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
   assets: {
@@ -74,4 +134,26 @@ export interface AlbumResponseDto {
       };
     }[];
   }[];
+  spreadPositions: {
+    position: number;
+    status: 'complete' | 'empty';
+    spread: {
+      id: string;
+      templateId: string;
+      order: number;
+      slots: {
+        id: string;
+        slotIndex: number;
+        assetId: string;
+        asset: {
+          id: string;
+          key: string;
+          sourceContentType: string;
+          previewUrl: string;
+        };
+      }[];
+    } | null;
+  }[];
 }
+
+

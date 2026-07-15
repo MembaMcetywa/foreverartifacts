@@ -12,3 +12,10 @@ node_modules
 *.db
 
 /design-explorations/
+
+.codex/agents/senior_ui_ux_designer.toml
+AGENTS.md
+client/CREATION_JOURNEY_SPEC.md
+client/DESIGN_SYSTEM.md
+client/PREMIUM_UI_PASS.md
+frontend-journey-audit.md

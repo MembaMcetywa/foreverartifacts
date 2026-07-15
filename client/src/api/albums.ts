@@ -3,6 +3,37 @@ export interface CreateAlbumInput {
   assetIds: string[]
 }
 
+export interface AddAlbumAssetsInput {
+  albumId: string
+  assetIds: string[]
+}
+
+export type AlbumWorkflowStage =
+  | 'collect_photos'
+  | 'compose_spreads'
+  | 'review_album'
+  | 'render_album'
+  | 'ready_to_order'
+
+export type AlbumRenderStatus =
+  | 'not_started'
+  | 'rendering'
+  | 'ready'
+  | 'failed'
+  | 'stale'
+  | 'approved'
+
+export interface UpdateAlbumWorkflowInput {
+  albumId: string
+  workflowStage: AlbumWorkflowStage
+  activeSpreadPosition?: number | null
+}
+
+export interface UpdateAlbumNameInput {
+  albumId: string
+  albumName: string
+}
+
 export interface AlbumAsset {
   assetId: string
   key: string
@@ -32,13 +63,25 @@ export interface AlbumSpread {
   slots: AlbumSpreadSlot[]
 }
 
+export interface AlbumSpreadPosition {
+  position: number
+  status: 'complete' | 'empty'
+  spread: AlbumSpread | null
+}
+
 export interface Album {
   id: string
   albumName: string
   albumSpecId: string
   state: string
+  workflowStage: AlbumWorkflowStage
+  activeSpreadPosition: number | null
+  renderStatus: AlbumRenderStatus
+  renderCompletedAt: string | null
+  renderApprovedAt: string | null
   assets: AlbumAsset[]
   spreads: AlbumSpread[]
+  spreadPositions: AlbumSpreadPosition[]
 }
 
 const API_BASE_URL =
@@ -70,6 +113,100 @@ export async function getAlbum(albumId: string): Promise<Album> {
   return (await response.json()) as Album
 }
 
+export async function addAlbumAssets(
+  input: AddAlbumAssetsInput,
+): Promise<Album> {
+  const response = await fetch(
+    `${API_BASE_URL}/albums/${input.albumId}/assets`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ assetIds: input.assetIds }),
+    },
+  )
+
+  if (!response.ok) {
+    throw new Error('Failed to add photographs to the album.')
+  }
+
+  return (await response.json()) as Album
+}
+
+export async function deleteAlbum(albumId: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/albums/${albumId}`, {
+    method: 'DELETE',
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to delete album.')
+  }
+}
+
+export async function updateAlbumWorkflow(
+  input: UpdateAlbumWorkflowInput,
+): Promise<Album> {
+  const response = await fetch(`${API_BASE_URL}/albums/${input.albumId}/workflow`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      workflowStage: input.workflowStage,
+      activeSpreadPosition: input.activeSpreadPosition ?? null,
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to update album workflow.')
+  }
+
+  return (await response.json()) as Album
+}
+
+export async function updateAlbumName(
+  input: UpdateAlbumNameInput,
+): Promise<Album> {
+  const response = await fetch(`${API_BASE_URL}/albums/${input.albumId}/name`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ albumName: input.albumName }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to update album name.')
+  }
+
+  return (await response.json()) as Album
+}
+
+export async function startAlbumRender(albumId: string): Promise<Album> {
+  const response = await fetch(`${API_BASE_URL}/albums/${albumId}/render/start`, {
+    method: 'POST',
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to render the book PDF.')
+  }
+
+  return (await response.json()) as Album
+}
+
+export async function approveAlbumRender(albumId: string): Promise<Album> {
+  const response = await fetch(`${API_BASE_URL}/albums/${albumId}/render/approve`, {
+    method: 'POST',
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to continue to order.')
+  }
+
+  return (await response.json()) as Album
+}
+
 export async function listAlbums(): Promise<Album[]> {
   const response = await fetch(`${API_BASE_URL}/albums`)
 
@@ -79,3 +216,5 @@ export async function listAlbums(): Promise<Album[]> {
 
   return (await response.json()) as Album[]
 }
+
+

@@ -1,174 +1,199 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import type { ChangeEvent, SubmitEvent } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { useAlbumsQuery } from '../../queries/albums'
-import { useUploadAssetMutation } from '../../queries/assets'
-import { useCreateAlbumStore } from '../../stores/albumStore'
+
+import type { Album } from '../../api/albums'
+import { BookIndexRow } from '../../components/BookIndexRow'
+import { Button } from '../../components/Button'
+import { ModalWrapper } from '../../components/ModalWrapper'
 import {
-  getImageContentType,
-  IMAGE_INPUT_ACCEPT,
-  selectImageFiles,
-} from '../../utils/image-upload-policy'
+  removeAlbumFromCache,
+  useAlbumsQuery,
+  useCreateAlbumMutation,
+  useDeleteAlbumMutation,
+} from '../../queries/albums'
 
 export const Route = createFileRoute('/create/')({
   component: CreatePage,
 })
 
+const ALBUM_SPEC_ID = 'square_210_v1'
+
 function CreatePage() {
-  const [selectedImages, setSelectedImages] = useState<File[]>([])
-  const [isUploading, setIsUploading] = useState(false)
-
-  const addUploadedAsset = useCreateAlbumStore(
-    (state) => state.addUploadedAsset,
-  )
-  const clearAlbum = useCreateAlbumStore((state) => state.clearAlbum)
-  const clearUploadedAssets = useCreateAlbumStore(
-    (state) => state.clearUploadedAssets,
-  )
-  const setAlbumId = useCreateAlbumStore((state) => state.setAlbumId)
-
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const [albumPendingDelete, setAlbumPendingDelete] = useState<Album | null>(
+    null,
+  )
   const albumsQuery = useAlbumsQuery()
-  const uploadAssetMutation = useUploadAssetMutation()
+  const createAlbumMutation = useCreateAlbumMutation()
+  const deleteAlbumMutation = useDeleteAlbumMutation()
+  const bookCount = albumsQuery.data?.length ?? 0
 
-  function handleOpenAlbum(albumId: string) {
-    setAlbumId(albumId)
-    navigate({ to: '/create/album' })
-  }
-
-  function handleImageSelection(event: ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(event.target.files ?? [])
-
-    setSelectedImages((currentImages) => {
-      const { accepted } = selectImageFiles(currentImages, files)
-
-      return [...currentImages, ...accepted]
+  function openPhotographs(albumId: string) {
+    navigate({
+      to: '/albums/$albumId/photos',
+      params: { albumId },
     })
-
-    event.target.value = ''
   }
 
-  async function handleContinue(event: SubmitEvent<HTMLFormElement>) {
-    event.preventDefault()
+  function startBook() {
+    createAlbumMutation.mutate(
+      {
+        albumSpecId: ALBUM_SPEC_ID,
+        assetIds: [],
+      },
+      {
+        onSuccess: (album) => openPhotographs(album.id),
+      },
+    )
+  }
 
-    if (selectedImages.length === 0 || isUploading) return
+  function closeDeleteModal() {
+    if (!deleteAlbumMutation.isPending) {
+      deleteAlbumMutation.reset()
+      setAlbumPendingDelete(null)
+    }
+  }
 
-    clearAlbum()
-    clearUploadedAssets()
-    setIsUploading(true)
+  function openDeleteModal(album: Album) {
+    deleteAlbumMutation.reset()
+    setAlbumPendingDelete(album)
+  }
 
-    try {
-      for (const image of selectedImages) {
-        const contentType = getImageContentType(image)
-
-        if (!contentType) {
-          throw new Error(`${image.name} is not a supported image format.`)
-        }
-
-        const uploadedAsset = await uploadAssetMutation.mutateAsync({
-          file: image,
-          contentType,
-        })
-
-        addUploadedAsset({
-          assetId: uploadedAsset.assetId,
-          filename: uploadedAsset.filename,
-          previewUrl: uploadedAsset.previewUrl,
-        })
-      }
-
-      navigate({ to: '/create/album' })
-
+  function confirmDeleteAlbum() {
+    if (!albumPendingDelete) {
+      return
     }
 
-    catch {
-      throw new Error('Failed to upload images.')
-    }
-
-    finally {
-      setIsUploading(false)
-    }
+    deleteAlbumMutation.mutate(albumPendingDelete.id, {
+      onSuccess: () => {
+        removeAlbumFromCache(queryClient, albumPendingDelete.id)
+        queryClient.invalidateQueries({ queryKey: ['albums'] })
+        setAlbumPendingDelete(null)
+      },
+    })
   }
 
   return (
-    <main className="min-h-screen bg-[#f8f7f4] text-[#111111]">
-      <section className="mx-auto flex min-h-screen max-w-5xl flex-col px-6 py-16">
-        <h1 className="mb-6 text-5xl font-normal tracking-[-0.04em]">
-          Add your photos
-        </h1>
+    <main className="books-page">
+      <header className="books-masthead">
+        <img
+          className="books-masthead__lockup"
+          src="/brand/fa-lockup-horizontal.svg"
+          alt="Forever Artifacts"
+        />
+        <p className="books-masthead__context">Your archive</p>
+      </header>
 
-        <section className="mb-12">
-          <h2 className="mb-4 text-sm text-neutral-500">Existing albums</h2>
+      <section className="books-opening">
+        <div className="books-opening__statement">
+          {/* <p className="books-overline">Forever Artifacts</p> */}
+          <h1>The photographs that matter, made into a book</h1>
+        </div>
 
-          {albumsQuery.isLoading && (
-            <p className="text-sm text-neutral-500">Loading albums...</p>
-          )}
+        <div className="books-opening__action">
+          <p className="books-product-notation">210 × 210 mm / 12 spreads</p>
+          <p className="books-opening__support">
+            Begin with your photographs, and compose your forever artifact one
+            spread at a time.
+          </p>
+          <Button
+            type="button"
+            loading={createAlbumMutation.isPending}
+            onClick={startBook}
+          >
+            {createAlbumMutation.isPending
+              ? 'Starting your book...'
+              : 'Start a new book'}
+          </Button>
+          <p className="books-opening__status" role="status">
+            {createAlbumMutation.isError
+              ? 'Your book could not be started. Try again.'
+              : ''}
+          </p>
+        </div>
+      </section>
 
-          {albumsQuery.isError && (
-            <p className="text-sm text-neutral-500">
-              Albums could not be loaded.
+      <section className="books-archive" aria-labelledby="books-heading">
+        <header className="books-archive__header">
+          <h2 id="books-heading">Your books</h2>
+          <p>{bookCount === 1 ? '1 book' : `${bookCount} books`}</p>
+        </header>
+
+        {albumsQuery.isLoading && (
+          <div className="books-archive__loading" aria-label="Loading books">
+            {[0, 1, 2].map((row) => (
+              <div className="books-loading-row" key={row}>
+                <span />
+                <span />
+                <span />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {albumsQuery.isError && (
+          <div className="books-archive__message" role="alert">
+            <p>Your books could not be loaded.</p>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => albumsQuery.refetch()}
+            >
+              Try again
+            </Button>
+          </div>
+        )}
+
+        {albumsQuery.data && albumsQuery.data.length > 0 && (
+          <div className="books-archive__rows">
+            {albumsQuery.data.map((album, index) => (
+              <BookIndexRow
+                key={album.id}
+                album={album}
+                index={index}
+                onDelete={() => openDeleteModal(album)}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <ModalWrapper
+        open={Boolean(albumPendingDelete)}
+        title="Delete book"
+        onClose={closeDeleteModal}
+      >
+        <div className="books-delete-dialog">
+          <p>
+            This will delete the book from your archive, including its spreads.
+            This action cannot be undone.
+          </p>
+          <div className="books-delete-dialog__actions">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={deleteAlbumMutation.isPending}
+              onClick={closeDeleteModal}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              loading={deleteAlbumMutation.isPending}
+              onClick={confirmDeleteAlbum}
+            >
+              Yes, delete
+            </Button>
+          </div>
+          {deleteAlbumMutation.isError && (
+            <p className="books-delete-dialog__status" role="status">
+              The book could not be deleted. Try again.
             </p>
           )}
-
-          {albumsQuery.data?.length === 0 && (
-            <p className="text-sm text-neutral-500">No albums created yet.</p>
-          )}
-
-          {albumsQuery.data && albumsQuery.data.length > 0 && (
-            <div className="grid gap-2">
-              {albumsQuery.data.map((album) => (
-                <button
-                  key={album.id}
-                  type="button"
-                  onClick={() => handleOpenAlbum(album.id)}
-                  className="border border-neutral-300 bg-white px-4 py-3 text-left text-sm"
-                >
-                  {album.id}
-                </button>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <form onSubmit={handleContinue}>
-          <label className="mb-8 flex h-56 cursor-pointer items-center justify-center border border-neutral-300 bg-white">
-            <input
-              type="file"
-              accept={IMAGE_INPUT_ACCEPT}
-              multiple
-              className="hidden"
-              onChange={handleImageSelection}
-            />
-
-            <span className="text-sm tracking-wide">
-              {selectedImages.length > 0
-                ? `${selectedImages.length} image${selectedImages.length === 1 ? '' : 's'} selected`
-                : 'Choose images'}
-            </span>
-          </label>
-
-          {selectedImages.length > 0 && (
-            <div className="mb-10 grid grid-cols-2 gap-4 md:grid-cols-4">
-              {selectedImages.map((image, index) => (
-                <img
-                  key={`${image.name}-${image.lastModified}-${index}`}
-                  src={URL.createObjectURL(image)}
-                  alt={image.name}
-                  className="aspect-square w-full object-cover"
-                />
-              ))}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={selectedImages.length === 0 || isUploading}
-            className="border border-neutral-900 px-6 py-3 text-sm tracking-wide disabled:border-neutral-300 disabled:text-neutral-400"
-          >
-            {isUploading ? 'Uploading…' : 'Continue'}
-          </button>
-        </form>
-      </section>
+        </div>
+      </ModalWrapper>
     </main>
   )
 }

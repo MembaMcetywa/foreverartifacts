@@ -1,8 +1,11 @@
 import { Injectable } from '@nestjs/common';
 
 import { StorageService } from '../storage/storage.service';
+import { AlbumRenderStatus, AlbumWorkflowStage } from './album.types';
 import { AlbumResponseDto } from './albums.dto';
 import { AlbumsService } from './albums.service';
+
+const INTERIOR_SPREAD_COUNT = 12;
 
 type AlbumRecord = Awaited<ReturnType<AlbumsService['getAlbum']>>;
 
@@ -51,10 +54,31 @@ export class AlbumPresenter {
       albumName: album.albumName,
       albumSpecId: album.albumSpecId,
       state: album.state,
+      workflowStage: album.workflowStage as AlbumWorkflowStage,
+      activeSpreadPosition: album.activeSpreadPosition,
+      renderStatus: album.renderStatus as AlbumRenderStatus,
+      renderCompletedAt: album.renderCompletedAt,
+      renderApprovedAt: album.renderApprovedAt,
       createdAt: album.createdAt,
       updatedAt: album.updatedAt,
       assets,
       spreads,
+      spreadPositions: Array.from(
+        { length: INTERIOR_SPREAD_COUNT },
+        (_, index) => {
+          const spread = spreads.find(
+            (albumSpread) => albumSpread.order === index,
+          );
+
+          return {
+            position: index + 1,
+            status: spread ? ('complete' as const) : ('empty' as const),
+            spread: spread ?? null,
+          };
+        },
+      ),
     };
   }
 }
+
+
