@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CreateIndexRouteImport } from './routes/create/index'
-import { Route as CreateAlbumRouteImport } from './routes/create/album'
 import { Route as AlbumsAlbumIdReviewRouteImport } from './routes/albums/$albumId/review'
 import { Route as AlbumsAlbumIdPhotosRouteImport } from './routes/albums/$albumId/photos'
 import { Route as AlbumsAlbumIdCompleteRouteImport } from './routes/albums/$albumId/complete'
@@ -25,11 +24,6 @@ const IndexRoute = IndexRouteImport.update({
 const CreateIndexRoute = CreateIndexRouteImport.update({
   id: '/create/',
   path: '/create/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CreateAlbumRoute = CreateAlbumRouteImport.update({
-  id: '/create/album',
-  path: '/create/album',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AlbumsAlbumIdReviewRoute = AlbumsAlbumIdReviewRouteImport.update({
@@ -55,7 +49,6 @@ const AlbumsAlbumIdArrangeRoute = AlbumsAlbumIdArrangeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/create/album': typeof CreateAlbumRoute
   '/create/': typeof CreateIndexRoute
   '/albums/$albumId/arrange': typeof AlbumsAlbumIdArrangeRoute
   '/albums/$albumId/complete': typeof AlbumsAlbumIdCompleteRoute
@@ -64,7 +57,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/create/album': typeof CreateAlbumRoute
   '/create': typeof CreateIndexRoute
   '/albums/$albumId/arrange': typeof AlbumsAlbumIdArrangeRoute
   '/albums/$albumId/complete': typeof AlbumsAlbumIdCompleteRoute
@@ -74,7 +66,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/create/album': typeof CreateAlbumRoute
   '/create/': typeof CreateIndexRoute
   '/albums/$albumId/arrange': typeof AlbumsAlbumIdArrangeRoute
   '/albums/$albumId/complete': typeof AlbumsAlbumIdCompleteRoute
@@ -85,7 +76,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/create/album'
     | '/create/'
     | '/albums/$albumId/arrange'
     | '/albums/$albumId/complete'
@@ -94,7 +84,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/create/album'
     | '/create'
     | '/albums/$albumId/arrange'
     | '/albums/$albumId/complete'
@@ -103,7 +92,6 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/create/album'
     | '/create/'
     | '/albums/$albumId/arrange'
     | '/albums/$albumId/complete'
@@ -113,7 +101,6 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CreateAlbumRoute: typeof CreateAlbumRoute
   CreateIndexRoute: typeof CreateIndexRoute
   AlbumsAlbumIdArrangeRoute: typeof AlbumsAlbumIdArrangeRoute
   AlbumsAlbumIdCompleteRoute: typeof AlbumsAlbumIdCompleteRoute
@@ -135,13 +122,6 @@ declare module '@tanstack/react-router' {
       path: '/create'
       fullPath: '/create/'
       preLoaderRoute: typeof CreateIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/create/album': {
-      id: '/create/album'
-      path: '/create/album'
-      fullPath: '/create/album'
-      preLoaderRoute: typeof CreateAlbumRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/albums/$albumId/review': {
@@ -177,7 +157,6 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CreateAlbumRoute: CreateAlbumRoute,
   CreateIndexRoute: CreateIndexRoute,
   AlbumsAlbumIdArrangeRoute: AlbumsAlbumIdArrangeRoute,
   AlbumsAlbumIdCompleteRoute: AlbumsAlbumIdCompleteRoute,
