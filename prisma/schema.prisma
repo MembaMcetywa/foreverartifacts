@@ -6,41 +6,75 @@ datasource db {
   provider = "sqlite"
 }
 
+model User {
+  id              String    @id
+  authProvider    String
+  authSubject     String
+  email           String    @unique
+  emailVerifiedAt DateTime?
+  lastSeenAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  albums Album[]
+  assets Asset[]
+
+  @@unique([authProvider, authSubject])
+}
+
 model Asset {
-  id                  String       @id
-  key                 String       @unique
+  id                  String    @id
+  userId              String
+  key                 String    @unique
   contentType         String
-  status              String       @default("pending")
-  printKey            String?      @unique
-  previewKey          String?      @unique
+  status              String    @default("pending")
+  printKey            String?   @unique
+  previewKey          String?   @unique
   width               Int?
   height              Int?
   fileSize            Int?
   failureReason       String?
   processingStartedAt DateTime?
-  createdAt           DateTime     @default(now())
+  createdAt           DateTime  @default(now())
+  lastActivityAt      DateTime?
+  expiresAt           DateTime?
+  deletedAt           DateTime?
 
+  user        User         @relation(fields: [userId], references: [id])
   slots       AlbumSlot[]
   albumAssets AlbumAsset[]
+
+  @@index([userId])
 }
 
 model Album {
-  id          String        @id
-  albumName   String
-  albumSpecId String
-  state       String
-  workflowStage String @default("collect_photos")
+  id                   String    @id
+  userId               String
+  albumName            String
+  albumSpecId          String
+  state                String
+  workflowStage        String    @default("collect_photos")
   activeSpreadPosition Int?
-  renderStatus String @default("not_started")
-  renderId String?
-  renderArtifactKey String?
-  renderCompletedAt DateTime?
-  renderApprovedAt DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  renderStatus         String    @default("not_started")
+  renderId             String?
+  renderArtifactKey    String?
+  renderCompletedAt    DateTime?
+  renderApprovedAt     DateTime?
+  renderExpiresAt      DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  lastActivityAt       DateTime?
+  expiresAt            DateTime?
+  deletionRequestedAt  DateTime?
+  deletionCompletedAt  DateTime?
+  deletedAt            DateTime?
 
-  spreads     AlbumSpread[]
-  assets      AlbumAsset[]
+  user    User          @relation(fields: [userId], references: [id])
+  spreads AlbumSpread[]
+  assets  AlbumAsset[]
+
+  @@index([userId])
 }
 
 model AlbumAsset {

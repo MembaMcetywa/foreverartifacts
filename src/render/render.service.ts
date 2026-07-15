@@ -31,6 +31,7 @@ export class RenderService {
   ) {}
 
   async renderAlbum(input: {
+    userId: string;
     albumSpecId: string;
     spreads: {
       templateId: string;
@@ -39,15 +40,12 @@ export class RenderService {
   }): Promise<{ renderId: string; pdfKey: string }> {
     const renderId = randomUUID();
 
+    const renderGraph = this.compileRenderGraph(
+      input.albumSpecId,
+      input.spreads,
+    );
 
-
-        const renderGraph = this.compileRenderGraph(
-        input.albumSpecId,
-        input.spreads
-      );
-
-
-    const pdfBuffer = await this.renderPdf(renderGraph);
+    const pdfBuffer = await this.renderPdf(input.userId, renderGraph);
     const pdfKey = `renders/${renderId}.pdf`;
     const uploadUrl = await this.storage.getPresignedUploadUrl(
       pdfKey,
@@ -63,7 +61,10 @@ export class RenderService {
     return { renderId, pdfKey };
   }
 
-  private async renderPdf(doc: RenderDocument): Promise<Buffer> {
+  private async renderPdf(
+    userId: string,
+    doc: RenderDocument,
+  ): Promise<Buffer> {
     const pdf = await PDFDocument.create();
 
     for (const pageDef of doc.pages) {
@@ -72,7 +73,7 @@ export class RenderService {
       for (const element of pageDef.elements) {
         if (element.type !== 'image') continue;
 
-        await this.drawImage(pdf, page, element, doc.heightMm);
+        await this.drawImage(userId, pdf, page, element, doc.heightMm);
       }
     }
 
@@ -80,14 +81,14 @@ export class RenderService {
     return Buffer.from(bytes);
   }
 
-    private async drawImage(
-      pdf: PDFDocument,
-      page: any,
-      element: RenderImageElement,
-      pageHeightMm: number,
-    ): Promise<void> {
-
-    const asset = await this.assetsService.getAsset(element.assetId);
+  private async drawImage(
+    userId: string,
+    pdf: PDFDocument,
+    page: any,
+    element: RenderImageElement,
+    pageHeightMm: number,
+  ): Promise<void> {
+    const asset = await this.assetsService.getAsset(userId, element.assetId);
 
     if (asset.status !== 'ready') {
       throw new Error(`Asset '${asset.id}' is not ready to render.`);
@@ -99,49 +100,43 @@ export class RenderService {
     const response = await fetch(downloadUrl);
     const imageBytes = new Uint8Array(await response.arrayBuffer());
 
-      const image =
-        imageBytes[0] === 0x89
-          ? await pdf.embedPng(imageBytes)
-          : await pdf.embedJpg(imageBytes);
+    const image =
+      imageBytes[0] === 0x89
+        ? await pdf.embedPng(imageBytes)
+        : await pdf.embedJpg(imageBytes);
 
-      const { xPt, widthPt, heightPt } = rectMmToPt(element.rect);
-      const yPt = mmToPt(
-        pageHeightMm - element.rect.yMm - element.rect.heightMm,
-      );
-      const coverWidthPt = mmToPt(element.coverFrame.widthMm);
-      const coverHeightPt = mmToPt(element.coverFrame.heightMm);
-      const coverOffsetXPt = mmToPt(element.coverFrame.offsetXMm);
+    const { xPt, widthPt, heightPt } = rectMmToPt(element.rect);
+    const yPt = mmToPt(pageHeightMm - element.rect.yMm - element.rect.heightMm);
+    const coverWidthPt = mmToPt(element.coverFrame.widthMm);
+    const coverHeightPt = mmToPt(element.coverFrame.heightMm);
+    const coverOffsetXPt = mmToPt(element.coverFrame.offsetXMm);
 
-      const scale = Math.max(
-        coverWidthPt / image.width,
-        coverHeightPt / image.height,
-      );
-      const renderedWidthPt = image.width * scale;
-      const renderedHeightPt = image.height * scale;
-      const renderedXPt =
-        xPt -
-        coverOffsetXPt -
-        (renderedWidthPt - coverWidthPt) / 2;
-      const renderedYPt =
-        yPt - (renderedHeightPt - coverHeightPt) / 2;
+    const scale = Math.max(
+      coverWidthPt / image.width,
+      coverHeightPt / image.height,
+    );
+    const renderedWidthPt = image.width * scale;
+    const renderedHeightPt = image.height * scale;
+    const renderedXPt =
+      xPt - coverOffsetXPt - (renderedWidthPt - coverWidthPt) / 2;
+    const renderedYPt = yPt - (renderedHeightPt - coverHeightPt) / 2;
 
-      page.pushOperators(
-        pushGraphicsState(),
-        rectangle(xPt, yPt, widthPt, heightPt),
-        clip(),
-        endPath(),
-      );
+    page.pushOperators(
+      pushGraphicsState(),
+      rectangle(xPt, yPt, widthPt, heightPt),
+      clip(),
+      endPath(),
+    );
 
-      page.drawImage(image, {
-        x: renderedXPt,
-        y: renderedYPt,
-        width: renderedWidthPt,
-        height: renderedHeightPt,
-      });
+    page.drawImage(image, {
+      x: renderedXPt,
+      y: renderedYPt,
+      width: renderedWidthPt,
+      height: renderedHeightPt,
+    });
 
-      page.pushOperators(popGraphicsState());
-    }
-
+    page.pushOperators(popGraphicsState());
+  }
 
   private compileRenderGraph(
     albumSpecId: string,
@@ -270,21 +265,15 @@ export class RenderService {
   ): number {
     const { columnsPerPage, gutterMm, margins } = spec.grid;
     const contentWidth = spec.page.widthMm - margins.innerMm - margins.outerMm;
-    const leftMargin =
-      side === 'left' ? margins.outerMm : margins.innerMm;
+    const leftMargin = side === 'left' ? margins.outerMm : margins.innerMm;
 
     const columnWidth =
       (contentWidth - (columnsPerPage - 1) * gutterMm) / columnsPerPage;
 
-    return (
-      leftMargin + (el.x.cols.startCol - 1) * (columnWidth + gutterMm)
-    );
+    return leftMargin + (el.x.cols.startCol - 1) * (columnWidth + gutterMm);
   }
 
-  private computeWidth(
-    spec: AlbumSpec,
-    el: PageImageElementPlacement,
-  ): number {
+  private computeWidth(spec: AlbumSpec, el: PageImageElementPlacement): number {
     const { columnsPerPage, gutterMm, margins } = spec.grid;
     const contentWidth = spec.page.widthMm - margins.innerMm - margins.outerMm;
 

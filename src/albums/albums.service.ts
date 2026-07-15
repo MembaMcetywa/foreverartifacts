@@ -13,6 +13,7 @@ import { AlbumSpread, AlbumState, AlbumWorkflowStage } from './album.types';
 const INTERIOR_SPREAD_COUNT = 12;
 
 interface CreateAlbumInput {
+  userId: string;
   albumSpecId: string;
   assetIds: string[];
 }
@@ -43,10 +44,12 @@ export class AlbumsService {
     this.layoutRegistry.getAlbumSpec(input.albumSpecId);
 
     const albumId = randomUUID();
+    await this.assertReadyAssetsOwnedByUser(input.userId, input.assetIds);
 
     return this.prisma.album.create({
       data: {
         id: albumId,
+        userId: input.userId,
         albumName: 'Untitled',
         albumSpecId: input.albumSpecId,
         state: 'draft',
@@ -64,9 +67,9 @@ export class AlbumsService {
     });
   }
 
-  async getAlbum(albumId: string) {
-    const album = await this.prisma.album.findUnique({
-      where: { id: albumId },
+  async getAlbum(userId: string, albumId: string) {
+    const album = await this.prisma.album.findFirst({
+      where: { id: albumId, userId },
       include: this.albumInclude(),
     });
 
@@ -77,16 +80,16 @@ export class AlbumsService {
     return album;
   }
 
-  async deleteAlbum(albumId: string) {
-    await this.getAlbum(albumId);
+  async deleteAlbum(userId: string, albumId: string) {
+    await this.getAlbum(userId, albumId);
 
     await this.prisma.album.delete({
       where: { id: albumId },
     });
   }
 
-  async addAssets(albumId: string, assetIds: string[]) {
-    const album = await this.getAlbum(albumId);
+  async addAssets(userId: string, albumId: string, assetIds: string[]) {
+    const album = await this.getAlbum(userId, albumId);
     const existingAssetIds = new Set(
       album.assets.map((albumAsset) => albumAsset.assetId),
     );
@@ -96,6 +99,7 @@ export class AlbumsService {
     const readyAssets = await this.prisma.asset.findMany({
       where: {
         id: { in: newAssetIds },
+        userId,
         status: 'ready',
       },
       select: { id: true },
@@ -125,14 +129,14 @@ export class AlbumsService {
           order: nextOrder + index,
         })),
       });
-      await this.markRenderStale(albumId);
+      await this.markRenderStale(userId, albumId);
     }
 
-    return this.getAlbum(albumId);
+    return this.getAlbum(userId, albumId);
   }
 
-  async addSpread(albumId: string, spread: AlbumSpread) {
-    const album = await this.getAlbum(albumId);
+  async addSpread(userId: string, albumId: string, spread: AlbumSpread) {
+    const album = await this.getAlbum(userId, albumId);
     this.validateSpread(album, spread);
 
     const usedOrders = new Set(
@@ -162,17 +166,18 @@ export class AlbumsService {
         },
       },
     });
-    await this.markRenderStale(albumId);
+    await this.markRenderStale(userId, albumId);
 
-    return this.getAlbum(albumId);
+    return this.getAlbum(userId, albumId);
   }
 
   async saveSpreadAtPosition(
+    userId: string,
     albumId: string,
     position: number,
     spread: AlbumSpread,
   ) {
-    const album = await this.getAlbum(albumId);
+    const album = await this.getAlbum(userId, albumId);
     const order = this.getOrderForPosition(position);
     const existingSpread = album.spreads.find(
       (albumSpread) => albumSpread.order === order,
@@ -219,13 +224,18 @@ export class AlbumsService {
       });
     }
 
-    await this.markRenderStale(albumId);
+    await this.markRenderStale(userId, albumId);
 
-    return this.getAlbum(albumId);
+    return this.getAlbum(userId, albumId);
   }
 
-  async updateSpread(albumId: string, spreadId: string, spread: AlbumSpread) {
-    const album = await this.getAlbum(albumId);
+  async updateSpread(
+    userId: string,
+    albumId: string,
+    spreadId: string,
+    spread: AlbumSpread,
+  ) {
+    const album = await this.getAlbum(userId, albumId);
     const existingSpread = album.spreads.find(
       (albumSpread) => albumSpread.id === spreadId,
     );
@@ -256,16 +266,17 @@ export class AlbumsService {
         },
       }),
     ]);
-    await this.markRenderStale(albumId);
+    await this.markRenderStale(userId, albumId);
 
-    return this.getAlbum(albumId);
+    return this.getAlbum(userId, albumId);
   }
 
   async reorderSpreads(
+    userId: string,
     albumId: string,
     positions: ReorderSpreadPositionInput[],
   ) {
-    const album = await this.getAlbum(albumId);
+    const album = await this.getAlbum(userId, albumId);
     const requestedSpreadIds = positions.map((position) => position.spreadId);
     const requestedOrders = positions.map((position) =>
       this.getOrderForPosition(position.position),
@@ -313,24 +324,24 @@ export class AlbumsService {
         }),
       ),
     ]);
-    await this.markRenderStale(albumId);
+    await this.markRenderStale(userId, albumId);
 
-    return this.getAlbum(albumId);
+    return this.getAlbum(userId, albumId);
   }
 
-  async clearSpreads(albumId: string) {
-    await this.getAlbum(albumId);
+  async clearSpreads(userId: string, albumId: string) {
+    await this.getAlbum(userId, albumId);
 
     await this.prisma.albumSpread.deleteMany({
       where: { albumId },
     });
-    await this.markRenderStale(albumId);
+    await this.markRenderStale(userId, albumId);
 
-    return this.getAlbum(albumId);
+    return this.getAlbum(userId, albumId);
   }
 
-  async setState(albumId: string, state: AlbumState) {
-    await this.getAlbum(albumId);
+  async setState(userId: string, albumId: string, state: AlbumState) {
+    await this.getAlbum(userId, albumId);
 
     return this.prisma.album.update({
       where: { id: albumId },
@@ -339,8 +350,12 @@ export class AlbumsService {
     });
   }
 
-  async updateWorkflow(albumId: string, input: UpdateWorkflowInput) {
-    await this.getAlbum(albumId);
+  async updateWorkflow(
+    userId: string,
+    albumId: string,
+    input: UpdateWorkflowInput,
+  ) {
+    await this.getAlbum(userId, albumId);
 
     if (
       input.activeSpreadPosition !== undefined &&
@@ -359,8 +374,12 @@ export class AlbumsService {
     });
   }
 
-  async updateAlbumName(albumId: string, input: UpdateAlbumNameInput) {
-    await this.getAlbum(albumId);
+  async updateAlbumName(
+    userId: string,
+    albumId: string,
+    input: UpdateAlbumNameInput,
+  ) {
+    await this.getAlbum(userId, albumId);
     const albumName = input.albumName.trim();
 
     if (!albumName) {
@@ -374,8 +393,8 @@ export class AlbumsService {
     });
   }
 
-  async startRender(albumId: string) {
-    const album = await this.getAlbum(albumId);
+  async startRender(userId: string, albumId: string) {
+    const album = await this.getAlbum(userId, albumId);
     this.assertReadyForRender(album);
 
     await this.prisma.album.update({
@@ -390,6 +409,7 @@ export class AlbumsService {
 
     try {
       const render = await this.renderService.renderAlbum({
+        userId,
         albumSpecId: album.albumSpecId,
         spreads: album.spreads.map((spread) => ({
           templateId: spread.templateId,
@@ -424,8 +444,8 @@ export class AlbumsService {
     }
   }
 
-  async approveRender(albumId: string) {
-    const album = await this.getAlbum(albumId);
+  async approveRender(userId: string, albumId: string) {
+    const album = await this.getAlbum(userId, albumId);
 
     if (album.renderStatus !== 'ready') {
       throw new BadRequestException(
@@ -449,8 +469,9 @@ export class AlbumsService {
     });
   }
 
-  async listAlbums() {
+  async listAlbums(userId: string) {
     return this.prisma.album.findMany({
+      where: { userId },
       include: this.albumInclude(),
       orderBy: { createdAt: 'desc' },
     });
@@ -540,10 +561,11 @@ export class AlbumsService {
     }
   }
 
-  private async markRenderStale(albumId: string) {
+  private async markRenderStale(userId: string, albumId: string) {
     await this.prisma.album.updateMany({
       where: {
         id: albumId,
+        userId,
         renderStatus: {
           in: ['ready', 'approved'],
         },
@@ -553,6 +575,32 @@ export class AlbumsService {
         renderApprovedAt: null,
       },
     });
+  }
+
+  private async assertReadyAssetsOwnedByUser(
+    userId: string,
+    assetIds: string[],
+  ): Promise<void> {
+    if (assetIds.length === 0) return;
+
+    const readyAssets = await this.prisma.asset.findMany({
+      where: {
+        id: { in: assetIds },
+        userId,
+        status: 'ready',
+      },
+      select: { id: true },
+    });
+    const readyAssetIds = new Set(readyAssets.map((asset) => asset.id));
+    const missingAssetIds = assetIds.filter(
+      (assetId) => !readyAssetIds.has(assetId),
+    );
+
+    if (missingAssetIds.length > 0) {
+      throw new BadRequestException(
+        `Assets are not ready or do not exist: ${missingAssetIds.join(', ')}.`,
+      );
+    }
   }
 
   private getOrderForPosition(position: number) {
@@ -569,5 +617,3 @@ export class AlbumsService {
     return position - 1;
   }
 }
-
-

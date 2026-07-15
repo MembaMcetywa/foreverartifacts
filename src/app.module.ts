@@ -9,6 +9,7 @@ import { AlbumsModule } from './albums/albums.module';
 import { RenderModule } from './render/render.module';
 import { StorageModule } from './storage/storage.module';
 import { DatabaseModule } from './database/database.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { DatabaseModule } from './database/database.module';
     RenderModule,
     StorageModule,
     DatabaseModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
