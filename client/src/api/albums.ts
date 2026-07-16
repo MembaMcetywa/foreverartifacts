@@ -1,3 +1,5 @@
+import { apiFetch } from './client'
+
 export interface CreateAlbumInput {
   albumSpecId: string
   assetIds: string[]
@@ -84,11 +86,8 @@ export interface Album {
   spreadPositions: AlbumSpreadPosition[]
 }
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000'
-
 export async function createAlbum(input: CreateAlbumInput): Promise<Album> {
-  const response = await fetch(`${API_BASE_URL}/albums`, {
+  const response = await apiFetch('/albums', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -104,7 +103,7 @@ export async function createAlbum(input: CreateAlbumInput): Promise<Album> {
 }
 
 export async function getAlbum(albumId: string): Promise<Album> {
-  const response = await fetch(`${API_BASE_URL}/albums/${albumId}`)
+  const response = await apiFetch(`/albums/${albumId}`)
 
   if (!response.ok) {
     throw new Error('Failed to fetch album.')
@@ -116,8 +115,8 @@ export async function getAlbum(albumId: string): Promise<Album> {
 export async function addAlbumAssets(
   input: AddAlbumAssetsInput,
 ): Promise<Album> {
-  const response = await fetch(
-    `${API_BASE_URL}/albums/${input.albumId}/assets`,
+  const response = await apiFetch(
+    `/albums/${input.albumId}/assets`,
     {
       method: 'POST',
       headers: {
@@ -135,7 +134,7 @@ export async function addAlbumAssets(
 }
 
 export async function deleteAlbum(albumId: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/albums/${albumId}`, {
+  const response = await apiFetch(`/albums/${albumId}`, {
     method: 'DELETE',
   })
 
@@ -147,7 +146,7 @@ export async function deleteAlbum(albumId: string): Promise<void> {
 export async function updateAlbumWorkflow(
   input: UpdateAlbumWorkflowInput,
 ): Promise<Album> {
-  const response = await fetch(`${API_BASE_URL}/albums/${input.albumId}/workflow`, {
+  const response = await apiFetch(`/albums/${input.albumId}/workflow`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -168,7 +167,7 @@ export async function updateAlbumWorkflow(
 export async function updateAlbumName(
   input: UpdateAlbumNameInput,
 ): Promise<Album> {
-  const response = await fetch(`${API_BASE_URL}/albums/${input.albumId}/name`, {
+  const response = await apiFetch(`/albums/${input.albumId}/name`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -184,7 +183,7 @@ export async function updateAlbumName(
 }
 
 export async function startAlbumRender(albumId: string): Promise<Album> {
-  const response = await fetch(`${API_BASE_URL}/albums/${albumId}/render/start`, {
+  const response = await apiFetch(`/albums/${albumId}/render/start`, {
     method: 'POST',
   })
 
@@ -196,7 +195,7 @@ export async function startAlbumRender(albumId: string): Promise<Album> {
 }
 
 export async function approveAlbumRender(albumId: string): Promise<Album> {
-  const response = await fetch(`${API_BASE_URL}/albums/${albumId}/render/approve`, {
+  const response = await apiFetch(`/albums/${albumId}/render/approve`, {
     method: 'POST',
   })
 
@@ -208,7 +207,7 @@ export async function approveAlbumRender(albumId: string): Promise<Album> {
 }
 
 export async function listAlbums(): Promise<Album[]> {
-  const response = await fetch(`${API_BASE_URL}/albums`)
+  const response = await apiFetch('/albums')
 
   if (!response.ok) {
     throw new Error('Failed to fetch albums.')

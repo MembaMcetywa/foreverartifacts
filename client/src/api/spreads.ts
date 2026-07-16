@@ -1,4 +1,5 @@
 import type { Album } from './albums'
+import { apiFetch } from './client'
 
 export interface AlbumSpreadSlotInput {
   slotIndex: number
@@ -25,12 +26,9 @@ export interface ReorderSpreadsInput {
   positions: ReorderSpreadPositionInput[]
 }
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
-
 export async function addSpread(input: AddSpreadInput): Promise<Album> {
-  const response = await fetch(
-    `${API_BASE_URL}/albums/${input.albumId}/spreads`,
+  const response = await apiFetch(
+    `/albums/${input.albumId}/spreads`,
     {
       method: 'POST',
       headers: {
@@ -53,8 +51,8 @@ export async function addSpread(input: AddSpreadInput): Promise<Album> {
 export async function reorderSpreads(
   input: ReorderSpreadsInput,
 ): Promise<Album> {
-  const response = await fetch(
-    `${API_BASE_URL}/albums/${input.albumId}/spreads/order`,
+  const response = await apiFetch(
+    `/albums/${input.albumId}/spreads/order`,
     {
       method: 'PUT',
       headers: {
@@ -76,8 +74,8 @@ export async function reorderSpreads(
 export async function saveSpreadAtPosition(
   input: SaveSpreadAtPositionInput,
 ): Promise<Album> {
-  const response = await fetch(
-    `${API_BASE_URL}/albums/${input.albumId}/spreads/positions/${input.position}`,
+  const response = await apiFetch(
+    `/albums/${input.albumId}/spreads/positions/${input.position}`,
     {
       method: 'PUT',
       headers: {

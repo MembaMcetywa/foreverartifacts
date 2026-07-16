@@ -1,3 +1,5 @@
+import { apiFetch } from './client'
+
 export interface CreateUploadUrlInput {
   filename: string
   contentType: string
@@ -16,13 +18,10 @@ export interface CompleteAssetResponse {
   previewUrl: string
 }
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000'
-
 export async function createUploadUrl(
   input: CreateUploadUrlInput,
 ): Promise<CreateUploadUrlResponse> {
-  const response = await fetch(`${API_BASE_URL}/assets/upload-url`, {
+  const response = await apiFetch('/assets/upload-url', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -58,7 +57,7 @@ export async function uploadAsset(
 export async function completeAssetUpload(
   assetId: string,
 ): Promise<CompleteAssetResponse> {
-  const response = await fetch(`${API_BASE_URL}/assets/${assetId}/complete`, {
+  const response = await apiFetch(`/assets/${assetId}/complete`, {
     method: 'POST',
   })
 

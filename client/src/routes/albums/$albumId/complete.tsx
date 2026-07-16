@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 
 import { AlbumNameEditor } from '../../../components/AlbumNameEditor'
+import { requireAuth } from '../../../auth/requireAuth'
 import { Button } from '../../../components/Button'
 import { CompleteSpreadPreview } from '../../../components/CompleteSpreadPreview'
 import { CreationShell } from '../../../components/CreationShell'
@@ -21,6 +22,7 @@ import {
 } from '../../../utils/review-spreads'
 
 export const Route = createFileRoute('/albums/$albumId/complete')({
+  beforeLoad: ({ location }) => requireAuth(location.href),
   component: CompletePage,
 })
 

@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+import { Link } from '@tanstack/react-router'
+
 import { AlbumNameEditor } from './AlbumNameEditor'
 
 export interface CreationShellProps {
@@ -24,7 +26,13 @@ export function CreationShell({
     <main className="creation-shell">
       <div className="creation-shell__inner">
         <header className="creation-shell__header">
-          <p className="creation-shell__brand">ForeverArtifacts</p>
+          <Link
+            to="/create"
+            className="creation-shell__brand"
+            aria-label="Forever Artifacts books"
+          >
+            <img src="/brand/fa-mark-spread.svg" alt="Forever Artifacts" />
+          </Link>
 
           <div className="creation-shell__project">
             {onTitleSave ? (

@@ -4,6 +4,7 @@ import type { ChangeEvent } from 'react'
 import { useEffect, useRef, useState } from 'react'
 
 import { Button } from '../../../components/Button'
+import { requireAuth } from '../../../auth/requireAuth'
 import { CreationShell } from '../../../components/CreationShell'
 import { SelectedPhotograph } from '../../../components/SelectedPhotograph'
 import { useAlbumNameEditor } from '../../../hooks/useAlbumNameEditor'
@@ -22,6 +23,7 @@ import {
 } from '../../../utils/image-upload-policy'
 
 export const Route = createFileRoute('/albums/$albumId/photos')({
+  beforeLoad: ({ location }) => requireAuth(location.href),
   validateSearch: (search: Record<string, unknown>) => {
     const spread = Number(search.spread)
 

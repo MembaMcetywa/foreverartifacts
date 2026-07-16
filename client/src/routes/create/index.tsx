@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import type { Album } from '../../api/albums'
+import { requireAuth } from '../../auth/requireAuth'
 import { BookIndexRow } from '../../components/BookIndexRow'
 import { Button } from '../../components/Button'
 import { ModalWrapper } from '../../components/ModalWrapper'
@@ -14,6 +15,7 @@ import {
 } from '../../queries/albums'
 
 export const Route = createFileRoute('/create/')({
+  beforeLoad: ({ location }) => requireAuth(location.href),
   component: CreatePage,
 })
 

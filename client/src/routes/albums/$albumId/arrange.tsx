@@ -4,6 +4,7 @@ import { ChevronDown } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { ArrangePhotoTray } from '../../../components/ArrangePhotoTray'
+import { requireAuth } from '../../../auth/requireAuth'
 import { Button } from '../../../components/Button'
 import { CreationShell } from '../../../components/CreationShell'
 import { ModalWrapper } from '../../../components/ModalWrapper'
@@ -17,6 +18,7 @@ import { useSaveSpreadAtPositionMutation } from '../../../queries/spreads'
 import { useLayoutTemplatesQuery } from '../../../queries/templates'
 
 export const Route = createFileRoute('/albums/$albumId/arrange')({
+  beforeLoad: ({ location }) => requireAuth(location.href),
   validateSearch: (search: Record<string, unknown>) => {
     const spread = Number(search.spread)
 
@@ -68,7 +70,7 @@ function ArrangePage() {
     (spreadPosition) => spreadPosition.position === activeSpreadPosition,
   )
   const activeSpreadRecord = activeSpread?.spread ?? null
-  const isEditingSpread = Boolean(activeSpreadRecord)
+  const isEditingSpread = returnTo === 'review' && Boolean(activeSpreadRecord)
   const hasCompletedAllSpreads = completedSpreads === 12
   const shouldShowCompletion = hasCompletedAllSpreads && !isEditingSpread
   const selectedTemplate = templatesQuery.data?.find(
@@ -211,6 +213,19 @@ function ArrangePage() {
       return
     }
 
+    const hasCompletedBook = savedAlbum.spreadPositions.every(
+      (spreadPosition) => spreadPosition.status === 'complete',
+    )
+
+    if (hasCompletedBook) {
+      queryClient.setQueryData(['album', albumId], savedAlbum)
+      await navigate({
+        to: '/albums/$albumId/review',
+        params: { albumId },
+      })
+      return
+    }
+
     await queryClient.invalidateQueries({ queryKey: ['album', albumId] })
     setSlotAssignments({})
     setActiveSlotIndex(0)
@@ -258,8 +273,7 @@ function ArrangePage() {
                 <div>
                   <h2>All 12 spreads are complete</h2>
                   <p>
-                    Review the full book sequence before generating your render
-                    PDF.
+                    Continue to review your book and make any final edits.
                   </p>
                 </div>
                 <Link

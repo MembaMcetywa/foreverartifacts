@@ -32,6 +32,12 @@ interface AuthTokens {
   expiresIn: number;
 }
 
+interface LoginResult {
+  tokens: AuthTokens;
+  user: AuthSessionUser;
+  authUsername: string;
+}
+
 export interface AuthSessionUser {
   id: string;
   email: string;
@@ -96,10 +102,7 @@ export class AuthService {
   async login(
     email: string,
     password: string,
-  ): Promise<{
-    tokens: AuthTokens;
-    user: AuthSessionUser;
-  }> {
+  ): Promise<LoginResult> {
     this.assertConfigured();
 
     try {
@@ -127,6 +130,7 @@ export class AuthService {
 
       const payload = decodeTokenPayload(result.IdToken);
       const user = await this.upsertUser(payload);
+      const authUsername = payload['cognito:username'] ?? email;
 
       return {
         tokens: {
@@ -136,6 +140,7 @@ export class AuthService {
           expiresIn: result.ExpiresIn,
         },
         user,
+        authUsername,
       };
     } catch (error) {
       if (error instanceof UnauthorizedException) throw error;
@@ -143,20 +148,14 @@ export class AuthService {
     }
   }
 
-  async refresh(
-    refreshToken: string,
-    idToken?: string,
-  ): Promise<AuthTokens> {
+  async refresh(refreshToken: string, authUsername?: string): Promise<AuthTokens> {
     this.assertConfigured();
 
     if (!refreshToken) {
       throw new UnauthorizedException('Authentication is required.');
     }
 
-    const payload = idToken ? decodeTokenPayload(idToken) : undefined;
-    const username = payload?.['cognito:username'] ?? payload?.email;
-
-    if (this.clientSecret && !username) {
+    if (this.clientSecret && !authUsername) {
       throw new UnauthorizedException('Authentication is invalid.');
     }
 
@@ -167,8 +166,8 @@ export class AuthService {
           AuthFlow: 'REFRESH_TOKEN_AUTH',
           AuthParameters: {
             REFRESH_TOKEN: refreshToken,
-            ...(this.clientSecret && username
-              ? { SECRET_HASH: this.getSecretHash(username) }
+            ...(this.clientSecret && authUsername
+              ? { SECRET_HASH: this.getSecretHash(authUsername) }
               : {}),
           },
         }),
@@ -331,13 +330,16 @@ export class AuthService {
         ? String(error.name)
         : '';
 
+    if (name === 'NotAuthorizedException') {
+      return new UnauthorizedException(fallback);
+    }
+
     if (
       [
         'CodeMismatchException',
         'ExpiredCodeException',
         'InvalidPasswordException',
         'LimitExceededException',
-        'NotAuthorizedException',
         'TooManyRequestsException',
         'UserNotConfirmedException',
         'UserNotFoundException',
