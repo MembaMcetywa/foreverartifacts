@@ -1,6 +1,17 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+import { getCurrentUser, refreshSession } from '#/api/auth'
+import { ApiError } from '#/api/client'
+import { useAuthStore } from '#/stores/authStore'
 
 export const Route = createFileRoute('/')({
+  beforeLoad: async () => {
+    const user = await getAuthenticatedLandingUser()
+
+    if (user) {
+      useAuthStore.getState().setUser(user)
+      throw redirect({ to: '/create' })
+    }
+  },
   component: Home,
   head: () => ({
     meta: [
@@ -16,7 +27,34 @@ export const Route = createFileRoute('/')({
   }),
 })
 
+async function getAuthenticatedLandingUser() {
+  try {
+    return await getCurrentUser()
+  } catch (error) {
+    if (!isUnauthorized(error)) {
+      return null
+    }
+
+    try {
+      await refreshSession()
+      return await getCurrentUser()
+    } catch (refreshError) {
+      if (!isUnauthorized(refreshError)) {
+        return null
+      }
+
+      return null
+    }
+  }
+}
+
+function isUnauthorized(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 401
+}
+
 function Home() {
+  const user = useAuthStore((state) => state.user)
+
   return (
     <main className="fa-page">
       <section className="fa-shell fa-hero">
@@ -26,9 +64,11 @@ function Home() {
             src="/brand/fa-wordmark-stacked.svg"
             alt="Forever Artifacts"
           />
-          <Link to={'#' as '/'} className="fa-button-sm">
-            Login
-          </Link>
+          {!user && (
+            <Link to="/login" className="fa-button-sm">
+              Login
+            </Link>
+          )}
         </header>
 
         <div className="fa-hero-statement">
