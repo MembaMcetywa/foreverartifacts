@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { CompleteSpreadPreview } from '../../../components/CompleteSpreadPreview'
+import { requireAuth } from '../../../auth/requireAuth'
 import { CreationShell } from '../../../components/CreationShell'
 import { useAlbumNameEditor } from '../../../hooks/useAlbumNameEditor'
 import { useReviewWorkflowCheckpoint } from '../../../hooks/useReviewWorkflowCheckpoint'
@@ -16,6 +17,7 @@ import {
 } from '../../../utils/review-spreads'
 
 export const Route = createFileRoute('/albums/$albumId/review')({
+  beforeLoad: ({ location }) => requireAuth(location.href),
   component: ReviewPage,
 })
 
