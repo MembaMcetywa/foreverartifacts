@@ -23,13 +23,23 @@ function SignupPage() {
   )
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [status, setStatus] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const canSubmit = isValidAuthEmail(email) && isValidAuthPassword(password)
+  const passwordsMatch =
+    confirmPassword.length > 0 && password === confirmPassword
+  const canSubmit =
+    isValidAuthEmail(email) && isValidAuthPassword(password) && passwordsMatch
 
   async function submitSignup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setStatus('')
+
+    if (!canSubmit) {
+      setStatus('Enter matching valid passwords.')
+      return
+    }
+
     setSubmitting(true)
 
     try {
@@ -75,6 +85,19 @@ function SignupPage() {
             required
             onChange={(event) => setPassword(event.target.value)}
           />
+          <InputField
+            label="Confirm password"
+            type="password"
+            autoComplete="new-password"
+            value={confirmPassword}
+            required
+            onChange={(event) => setConfirmPassword(event.target.value)}
+          />
+          {confirmPassword.length > 0 && !passwordsMatch && (
+            <p className="auth-field-status" role="status">
+              Passwords do not match.
+            </p>
+          )}
           <p className="auth-fineprint">
             By signing up, you agree to Forever Artifacts’{' '}
             <Link to="/terms">Terms of Service</Link> and{' '}
