@@ -13,6 +13,7 @@ import { Request, Response } from 'express';
 
 import {
   ACCESS_TOKEN_COOKIE,
+  AUTH_USERNAME_COOKIE,
   clearAuthCookies,
   getAuthCookieOptions,
   ID_TOKEN_COOKIE,
@@ -53,16 +54,17 @@ export class AuthController {
 
   @Post('login')
   @Public()
+  @HttpCode(200)
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) response: Response,
   ): Promise<{ user: AuthUserDto }> {
-    const { tokens, user } = await this.authService.login(
+    const { tokens, user, authUsername } = await this.authService.login(
       dto.email,
       dto.password,
     );
 
-    this.setAuthCookies(response, tokens);
+    this.setAuthCookies(response, tokens, authUsername);
 
     return { user };
   }
@@ -87,10 +89,10 @@ export class AuthController {
       throw new UnauthorizedException('Authentication is required.');
     }
 
-    const idToken = readCookie(request, ID_TOKEN_COOKIE) ?? undefined;
-    const tokens = await this.authService.refresh(refreshToken, idToken);
+    const authUsername = readCookie(request, AUTH_USERNAME_COOKIE) ?? undefined;
+    const tokens = await this.authService.refresh(refreshToken, authUsername);
 
-    this.setAuthCookies(response, tokens);
+    this.setAuthCookies(response, tokens, authUsername);
   }
 
   @Get('me')
@@ -128,8 +130,10 @@ export class AuthController {
       refreshToken?: string;
       expiresIn: number;
     },
+    authUsername?: string,
   ): void {
     const baseOptions = this.getCookieOptions();
+    const refreshMaxAge = this.getRefreshCookieMaxAge();
 
     response.cookie(ACCESS_TOKEN_COOKIE, tokens.accessToken, {
       ...baseOptions,
@@ -143,7 +147,14 @@ export class AuthController {
     if (tokens.refreshToken) {
       response.cookie(REFRESH_TOKEN_COOKIE, tokens.refreshToken, {
         ...baseOptions,
-        maxAge: 30 * 24 * 60 * 60 * 1000,
+        maxAge: refreshMaxAge,
+      });
+    }
+
+    if (authUsername) {
+      response.cookie(AUTH_USERNAME_COOKIE, authUsername, {
+        ...baseOptions,
+        maxAge: refreshMaxAge,
       });
     }
   }
@@ -152,5 +163,14 @@ export class AuthController {
     return getAuthCookieOptions(
       this.config.get<string>('NODE_ENV') === 'production',
     );
+  }
+
+  private getRefreshCookieMaxAge(): number {
+    const configuredDays = Number(
+      this.config.get<string>('COGNITO_REFRESH_TOKEN_DAYS') ?? 30,
+    );
+    const days = Number.isFinite(configuredDays) ? configuredDays : 30;
+
+    return days * 24 * 60 * 60 * 1000;
   }
 }
