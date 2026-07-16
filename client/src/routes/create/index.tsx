@@ -85,7 +85,6 @@ function CreatePage() {
           src="/brand/fa-lockup-horizontal.svg"
           alt="Forever Artifacts"
         />
-        <p className="books-masthead__context">Your archive</p>
       </header>
 
       <section className="books-opening">

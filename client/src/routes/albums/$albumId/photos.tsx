@@ -229,7 +229,7 @@ function PhotographsPage() {
 
       {albumQuery.data && (
         <CreationShell
-          stage="Photographs · 1 of 5"
+          stage="Photographs — 1 of 5"
           title={albumTitle}
           titleSaving={savingAlbumName}
           onTitleSave={saveAlbumName}
