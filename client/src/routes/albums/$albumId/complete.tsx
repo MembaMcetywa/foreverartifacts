@@ -86,7 +86,7 @@ function CompletePage() {
 
       {album && (
         <CreationShell
-          stage="Complete - 5 of 5"
+          stage="Complete — 5 of 5"
           title={albumTitle}
           titleSaving={savingAlbumName}
           onTitleSave={saveAlbumName}

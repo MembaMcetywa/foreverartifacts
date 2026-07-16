@@ -73,7 +73,7 @@ function ReviewPage() {
 
       {albumQuery.data && (
         <CreationShell
-          stage="Review - 4 of 5"
+          stage="Review — 4 of 5"
           title={albumTitle}
           titleSaving={savingAlbumName}
           onTitleSave={saveAlbumName}

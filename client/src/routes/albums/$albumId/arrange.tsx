@@ -247,7 +247,7 @@ function ArrangePage() {
 
       {albumQuery.data && (
         <CreationShell
-          stage="Arrange - 2 of 5"
+          stage="Arrange — 2 of 5"
           title={albumTitle}
           titleSaving={savingAlbumName}
           onTitleSave={saveAlbumName}

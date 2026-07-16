@@ -1,6 +1,6 @@
 {
-  "short_name": "ForeverArtifacts",
-  "name": "ForeverArtifacts",
+  "short_name": "Forever Artifacts",
+  "name": "Forever Artifacts",
   "icons": [
     {
       "src": "brand/fa-favicon.svg",
@@ -10,6 +10,6 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
+  "theme_color": "#111111",
   "background_color": "#f5f1e8"
 }
