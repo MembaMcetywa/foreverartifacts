@@ -1,1 +1,1 @@
-design beautiful photo albums that are "forever" artifacts.
+design beautiful photo albums that are forever artifacts.
