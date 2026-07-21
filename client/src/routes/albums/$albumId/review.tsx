@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { CompleteSpreadPreview } from '../../../components/CompleteSpreadPreview'
 import { requireAuth } from '../../../auth/requireAuth'
 import { CreationShell } from '../../../components/CreationShell'
+import { Spinner } from '../../../components/Spinner'
 import { useAlbumNameEditor } from '../../../hooks/useAlbumNameEditor'
 import { useReviewWorkflowCheckpoint } from '../../../hooks/useReviewWorkflowCheckpoint'
 import { useAlbumQuery } from '../../../queries/albums'
@@ -61,7 +62,7 @@ function ReviewPage() {
     <>
       {albumQuery.isLoading && (
         <main className="photos-route-state">
-          <p>Loading your book...</p>
+          <Spinner size="lg" label="Loading your book" />
         </main>
       )}
 
