@@ -1,6 +1,7 @@
 import { Trash2 } from 'lucide-react'
 
 import { Button } from './Button'
+import { Spinner } from './Spinner'
 
 interface SelectedPhotographProps {
   name: string
@@ -29,7 +30,10 @@ export function SelectedPhotograph({
         {name}
       </p>
       <div className="selected-photograph__meta">
-        <span>{statusLabel}</span>
+        <span className="selected-photograph__status">
+          {status === 'uploading' && <Spinner size="sm" />}
+          {statusLabel}
+        </span>
         {(status === 'selected' || status === 'failed') && (
           <Button
             type="button"

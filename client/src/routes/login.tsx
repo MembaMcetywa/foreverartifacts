@@ -75,8 +75,12 @@ function LoginPage() {
             required
             onChange={(event) => setPassword(event.target.value)}
           />
-          <Button type="submit" disabled={submitting || !canSubmit}>
-            {submitting ? 'Logging you in...' : 'Login'}
+          <Button
+            type="submit"
+            loading={submitting}
+            disabled={submitting || !canSubmit}
+          >
+            Login
           </Button>
           <p className="auth-status" role="status">
             {status}

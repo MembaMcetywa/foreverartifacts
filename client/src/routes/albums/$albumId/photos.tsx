@@ -7,6 +7,7 @@ import { Button } from '../../../components/Button'
 import { requireAuth } from '../../../auth/requireAuth'
 import { CreationShell } from '../../../components/CreationShell'
 import { SelectedPhotograph } from '../../../components/SelectedPhotograph'
+import { Spinner } from '../../../components/Spinner'
 import { useAlbumNameEditor } from '../../../hooks/useAlbumNameEditor'
 import {
   useAddAlbumAssetsMutation,
@@ -217,7 +218,7 @@ function PhotographsPage() {
     <>
       {albumQuery.isLoading && (
         <main className="photos-route-state">
-          <p>Loading your book...</p>
+          <Spinner size="lg" label="Loading your book" />
         </main>
       )}
 
@@ -302,9 +303,7 @@ function PhotographsPage() {
                   disabled={!canUpload}
                   onClick={uploadPhotographs}
                 >
-                  {isUploading
-                    ? 'Uploading photographs...'
-                    : 'Upload photographs'}
+                  Upload photographs
                 </Button>
               </footer>
             )}

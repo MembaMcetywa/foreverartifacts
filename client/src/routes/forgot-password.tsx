@@ -68,8 +68,12 @@ function ForgotPasswordPage() {
             required
             onChange={(event) => setEmail(event.target.value)}
           />
-          <Button type="submit" disabled={submitting || !canSubmit}>
-            {submitting ? 'Sending...' : 'Send reset code'}
+          <Button
+            type="submit"
+            loading={submitting}
+            disabled={submitting || !canSubmit}
+          >
+            Send reset code
           </Button>
           <p className="auth-status" role="status">
             {status}

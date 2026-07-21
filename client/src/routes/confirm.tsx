@@ -81,8 +81,12 @@ function ConfirmPage() {
             required
             onChange={(event) => setCode(event.target.value)}
           />
-          <Button type="submit" disabled={submitting || !canSubmit}>
-            {submitting ? 'Confirming...' : 'Confirm account'}
+          <Button
+            type="submit"
+            loading={submitting}
+            disabled={submitting || !canSubmit}
+          >
+            Confirm account
           </Button>
           <p className="auth-status" role="status">
             {status}

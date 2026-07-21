@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 
 import { AlbumNameEditor } from './AlbumNameEditor'
+import { Spinner } from './Spinner'
 
 export interface CreationShellProps {
   stage: string
@@ -46,6 +47,7 @@ export function CreationShell({
             ) : (
               <p className="creation-shell__title">{title}</p>
             )}
+            {titleSaving && <Spinner size="sm" label="Saving album name" />}
             {status && <p className="creation-shell__status">{status}</p>}
           </div>
 

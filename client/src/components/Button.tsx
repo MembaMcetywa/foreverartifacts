@@ -1,5 +1,7 @@
 import type { ButtonHTMLAttributes } from 'react'
 
+import { Spinner } from './Spinner'
+
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary'
   loading?: boolean
@@ -25,7 +27,14 @@ export function Button({
       aria-busy={loading || undefined}
       onClick={onClick}
     >
-      {children}
+      {loading ? (
+        <>
+          <Spinner size="md" className="button__spinner" />
+          <span className="sr-only">{children}</span>
+        </>
+      ) : (
+        children
+      )}
     </button>
   )
 }
