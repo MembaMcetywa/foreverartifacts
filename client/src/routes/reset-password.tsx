@@ -95,8 +95,12 @@ function ResetPasswordPage() {
             required
             onChange={(event) => setPassword(event.target.value)}
           />
-          <Button type="submit" disabled={submitting || !canSubmit}>
-            {submitting ? 'Saving password...' : 'Save new password'}
+          <Button
+            type="submit"
+            loading={submitting}
+            disabled={submitting || !canSubmit}
+          >
+            Save new password
           </Button>
           <p className="auth-status" role="status">
             {status}
