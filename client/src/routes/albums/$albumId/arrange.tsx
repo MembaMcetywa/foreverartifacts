@@ -8,6 +8,7 @@ import { requireAuth } from '../../../auth/requireAuth'
 import { Button } from '../../../components/Button'
 import { CreationShell } from '../../../components/CreationShell'
 import { ModalWrapper } from '../../../components/ModalWrapper'
+import { Spinner } from '../../../components/Spinner'
 import { useAlbumNameEditor } from '../../../hooks/useAlbumNameEditor'
 import {
   useAlbumQuery,
@@ -235,7 +236,7 @@ function ArrangePage() {
     <>
       {albumQuery.isLoading && (
         <main className="photos-route-state">
-          <p>Loading your book...</p>
+          <Spinner size="lg" label="Loading your book" />
         </main>
       )}
 
@@ -312,7 +313,7 @@ function ArrangePage() {
                     <div className="arrange-template-rail arrange-template-rail--modal">
                       <div className="arrange-template-rail__header">
                         {templatesQuery.isLoading && (
-                          <p>Loading templates...</p>
+                          <Spinner size="md" label="Loading templates" />
                         )}
                         {templatesQuery.isError && (
                           <p role="alert">Templates could not be loaded.</p>
@@ -413,9 +414,7 @@ function ArrangePage() {
                     loading={saveSpreadMutation.isPending}
                     onClick={addCurrentSpread}
                   >
-                    {saveSpreadMutation.isPending
-                      ? 'Saving spread'
-                      : isEditingSpread
+                    {isEditingSpread
                         ? 'Save changes'
                         : 'Add spread'}
                   </Button>
@@ -423,7 +422,9 @@ function ArrangePage() {
                   <div className="arrange-template-rail arrange-template-rail--desktop">
                     <div className="arrange-template-rail__header">
                       <h2>Layout</h2>
-                      {templatesQuery.isLoading && <p>Loading templates...</p>}
+                      {templatesQuery.isLoading && (
+                        <Spinner size="md" label="Loading templates" />
+                      )}
                       {templatesQuery.isError && (
                         <p role="alert">Templates could not be loaded.</p>
                       )}
