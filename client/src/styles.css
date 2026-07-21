@@ -8,6 +8,7 @@
   --fa-color-line: rgba(17, 17, 17, 0.14);
   --fa-color-line-strong: rgba(17, 17, 17, 0.9);
   --fa-color-muted: rgba(17, 17, 17, 0.64);
+  --fa-color-success: #008000;
   --fa-color-danger: #d70000;
   --fa-font-sans:
     'Space Grotesk Variable', 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -126,6 +127,57 @@ select {
 
 .button__spinner {
   flex: none;
+}
+
+.fa-toast {
+  border: 1px solid var(--fa-color-line-strong) !important;
+  border-radius: 0 !important;
+  background: var(--fa-color-surface) !important;
+  color: var(--fa-color-ink) !important;
+  box-shadow: none !important;
+  font-family: var(--fa-font-sans) !important;
+  padding: 1.125rem 1.25rem !important;
+}
+
+.fa-toast__title {
+  color: var(--fa-color-ink) !important;
+  font-size: 0.8125rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+}
+
+.fa-toast__description {
+  color: var(--fa-color-muted) !important;
+  font-size: 0.75rem !important;
+}
+
+.fa-toast[data-type='success'] [data-icon] svg {
+  color: var(--fa-color-success) !important;
+  fill: var(--fa-color-success) !important;
+}
+
+.fa-toast[data-type='error'] [data-icon] svg {
+  color: var(--fa-color-danger) !important;
+  fill: var(--fa-color-danger) !important;
+}
+
+.fa-toast__close {
+  top: 0.875rem !important;
+  right: 0.875rem !important;
+  left: auto !important;
+  transform: none !important;
+  border-color: var(--fa-color-line) !important;
+  background: var(--fa-color-surface) !important;
+  color: var(--fa-color-ink) !important;
+}
+
+.fa-toast__action,
+.fa-toast__cancel {
+  border-radius: 999px !important;
+  font-size: 0.6875rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
 }
 
 .auth-page {

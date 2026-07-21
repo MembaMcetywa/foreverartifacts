@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { toast } from 'sonner'
 
 import type { Album } from '../../api/albums'
 import { requireAuth } from '../../auth/requireAuth'
@@ -48,6 +49,9 @@ function CreatePage() {
       },
       {
         onSuccess: (album) => openPhotographs(album.id),
+        onError: () => {
+          toast.error('Your book could not be started. Try again.')
+        },
       },
     )
   }
@@ -74,6 +78,10 @@ function CreatePage() {
         removeAlbumFromCache(queryClient, albumPendingDelete.id)
         queryClient.invalidateQueries({ queryKey: ['albums'] })
         setAlbumPendingDelete(null)
+        toast.success('Book deleted.')
+      },
+      onError: () => {
+        toast.error('The book could not be deleted. Try again.')
       },
     })
   }
@@ -107,11 +115,6 @@ function CreatePage() {
           >
             Start a new book
           </Button>
-          <p className="books-opening__status" role="status">
-            {createAlbumMutation.isError
-              ? 'Your book could not be started. Try again.'
-              : ''}
-          </p>
         </div>
       </section>
 
@@ -181,11 +184,6 @@ function CreatePage() {
               Yes, delete
             </Button>
           </div>
-          {deleteAlbumMutation.isError && (
-            <p className="books-delete-dialog__status" role="status">
-              The book could not be deleted. Try again.
-            </p>
-          )}
         </div>
       </ModalWrapper>
     </main>

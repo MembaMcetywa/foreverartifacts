@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ChangeEvent } from 'react'
 import { useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
 
 import { Button } from '../../../components/Button'
 import { requireAuth } from '../../../auth/requireAuth'
@@ -105,6 +106,13 @@ function PhotographsPage() {
 
     setSelectedPhotos((currentPhotos) => [...currentPhotos, ...newPhotos])
     setSelectionErrors(rejected.map((rejection) => rejection.message))
+    if (rejected.length > 0) {
+      toast.error(
+        rejected.length === 1
+          ? rejected[0].message
+          : `${rejected.length} photographs could not be selected.`,
+      )
+    }
     event.target.value = ''
   }
 
@@ -144,6 +152,7 @@ function PhotographsPage() {
 
       if (!contentType) {
         uploadFailed = true
+        toast.error(`${photo.file.name} is not a supported image type.`)
         continue
       }
 
@@ -173,6 +182,7 @@ function PhotographsPage() {
         )
       } catch {
         uploadFailed = true
+        toast.error(`${photo.file.name} could not be uploaded.`)
         setSelectedPhotos((currentPhotos) =>
           currentPhotos.map((currentPhoto) =>
             getFileIdentity(currentPhoto.file) === identity
@@ -192,6 +202,11 @@ function PhotographsPage() {
           assetIds: uploadedAssetIds,
         })
         await queryClient.invalidateQueries({ queryKey: ['album', albumId] })
+        toast.success(
+          uploadedAssetIds.length === 1
+            ? 'Photograph uploaded.'
+            : `${uploadedAssetIds.length} photographs uploaded.`,
+        )
 
         if (returnTo === 'review' && spread) {
           navigate({
@@ -207,6 +222,9 @@ function PhotographsPage() {
           params: { albumId },
         })
       } catch {
+        toast.error(
+          'Uploaded photographs could not be added to this book. Try uploading again.',
+        )
         setSelectionErrors([
           'Uploaded photographs could not be added to this book. Try uploading again.',
         ])
