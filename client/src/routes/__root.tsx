@@ -8,6 +8,7 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
+import { Toaster } from '#/components/Toaster'
 import appCss from '../styles.css?url'
 
 const queryClient = new QueryClient()
@@ -124,6 +125,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body>
         <QueryClientProvider client={queryClient}>
           {children}
+          <Toaster />
         </QueryClientProvider>
         <TanStackDevtools
           config={{
