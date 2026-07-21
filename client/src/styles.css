@@ -49,11 +49,53 @@ select {
   font: inherit;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.spinner {
+  --spinner-size: 2rem;
+  display: inline-block;
+  width: var(--spinner-size);
+  height: var(--spinner-size);
+  color: currentColor;
+  animation: spinner-spin 1.45s linear infinite;
+}
+
+.spinner[data-size='sm'] {
+  --spinner-size: 1.25rem;
+}
+
+.spinner[data-size='lg'] {
+  --spinner-size: 3rem;
+}
+
+.spinner path {
+  transform: scale(0.68);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes spinner-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .button {
   display: inline-flex;
   min-height: 3.25rem;
   align-items: center;
   justify-content: center;
+  gap: 0.625rem;
   padding-inline: 1.25rem;
   border: 1px solid var(--fa-color-ink);
   background: var(--fa-color-ink);
@@ -80,6 +122,10 @@ select {
 .button:focus-visible {
   outline: 2px solid var(--fa-color-ink);
   outline-offset: 3px;
+}
+
+.button__spinner {
+  flex: none;
 }
 
 .auth-page {
@@ -760,6 +806,10 @@ select {
   .books-index-row__title {
     transition: none;
   }
+
+  .spinner {
+    animation: none;
+  }
 }
 
 .creation-shell {
@@ -903,8 +953,11 @@ input.creation-shell__title {
 }
 
 .photos-route-state {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   min-height: 100vh;
+  min-width: 100vh;
   place-items: center;
   padding: var(--fa-gutter);
   background: var(--fa-color-paper);
@@ -1042,6 +1095,13 @@ input.creation-shell__title {
   gap: 0.75rem;
   color: var(--fa-color-muted);
   font-size: 0.6875rem;
+}
+
+.selected-photograph__status {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .selected-photograph__meta .button {
