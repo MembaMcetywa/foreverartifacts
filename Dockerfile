@@ -35,6 +35,7 @@ COPY --from=build --chown=node:node /app/prisma.config.ts ./prisma.config.ts
 COPY --from=build --chown=node:node /app/prisma ./prisma
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --chown=node:node certs ./certs
+RUN test -s /app/certs/rds-global-bundle.pem
 
 USER node
 
