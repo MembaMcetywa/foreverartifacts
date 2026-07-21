@@ -103,8 +103,12 @@ function SignupPage() {
             <Link to="/terms">Terms of Service</Link> and{' '}
             <Link to="/privacy">Privacy Policy</Link>
           </p>
-          <Button type="submit" disabled={submitting || !canSubmit}>
-            {submitting ? 'Creating account...' : 'Create account'}
+          <Button
+            type="submit"
+            loading={submitting}
+            disabled={submitting || !canSubmit}
+          >
+            Create account
           </Button>
           <p className="auth-status" role="status">
             {status}
