@@ -15,6 +15,7 @@ on:
       - prisma.config.ts
       - tsconfig*.json
       - .github/workflows/backend-image.yml
+      - certs/**
 
 permissions:
   contents: read
