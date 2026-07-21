@@ -7,6 +7,7 @@ import { requireAuth } from '../../auth/requireAuth'
 import { BookIndexRow } from '../../components/BookIndexRow'
 import { Button } from '../../components/Button'
 import { ModalWrapper } from '../../components/ModalWrapper'
+import { Spinner } from '../../components/Spinner'
 import {
   removeAlbumFromCache,
   useAlbumsQuery,
@@ -104,9 +105,7 @@ function CreatePage() {
             loading={createAlbumMutation.isPending}
             onClick={startBook}
           >
-            {createAlbumMutation.isPending
-              ? 'Starting your book...'
-              : 'Start a new book'}
+            Start a new book
           </Button>
           <p className="books-opening__status" role="status">
             {createAlbumMutation.isError
@@ -124,13 +123,7 @@ function CreatePage() {
 
         {albumsQuery.isLoading && (
           <div className="books-archive__loading" aria-label="Loading books">
-            {[0, 1, 2].map((row) => (
-              <div className="books-loading-row" key={row}>
-                <span />
-                <span />
-                <span />
-              </div>
-            ))}
+            <Spinner size="lg" label="Loading your books" />
           </div>
         )}
 
