@@ -91,17 +91,31 @@ jobs:
 
       - name: Download current ECS task definition
         run: |
+          set -euo pipefail
+
           aws ecs describe-services \
             --cluster "$ECS_CLUSTER" \
             --services "$ECS_SERVICE" \
             --output json \
             > ecs-service.json
 
-          cat ecs-service.json
 
-          TASK_DEFINITION_ARN="$(python -c 'import json; data=json.load(open("ecs-service.json")); print(data.get("services", [{}])[0].get("taskDefinition", ""))')"
+          SERVICE_FAILURE_COUNT="$(python -c 'import json; data=json.load(open("ecs-service.json")); print(len(data.get("failures", [])))')"
+          SERVICE_COUNT="$(python -c 'import json; data=json.load(open("ecs-service.json")); print(len(data.get("services", [])))')"
 
-          if [ -z "$TASK_DEFINITION_ARN" ]; then
+          if [ "$SERVICE_FAILURE_COUNT" != "0" ]; then
+            echo "ECS describe-services returned failures for cluster '$ECS_CLUSTER' and service '$ECS_SERVICE'."
+            exit 1
+          fi
+
+          if [ "$SERVICE_COUNT" != "1" ]; then
+            echo "Expected exactly one ECS service for cluster '$ECS_CLUSTER' and service '$ECS_SERVICE'. Got '$SERVICE_COUNT'."
+            exit 1
+          fi
+
+          TASK_DEFINITION_ARN="$(python -c 'import json; data=json.load(open("ecs-service.json")); service=data["services"][0]; primary=next((deployment for deployment in service.get("deployments", []) if deployment.get("status") == "PRIMARY"), {}); print(service.get("taskDefinition") or primary.get("taskDefinition") or "")')"
+
+          if [ -z "$TASK_DEFINITION_ARN" ] || [ "$TASK_DEFINITION_ARN" = "None" ]; then
             echo "No task definition was returned for ECS cluster '$ECS_CLUSTER' and ECS service '$ECS_SERVICE'."
             exit 1
           fi
@@ -112,9 +126,20 @@ jobs:
             --task-definition "$TASK_DEFINITION_ARN" \
             --query taskDefinition \
             > task-definition.json
+
+          echo "Task definition container names:"
+          python -c 'import json; data=json.load(open("task-definition.json")); print("\n".join(container["name"] for container in data.get("containerDefinitions", [])))'
+
+          CONTAINER_EXISTS="$(python -c 'import json, os; data=json.load(open("task-definition.json")); expected=os.environ["ECS_CONTAINER_NAME"]; print(any(container.get("name") == expected for container in data.get("containerDefinitions", [])))')"
+
+          if [ "$CONTAINER_EXISTS" != "True" ]; then
+            echo "Container '$ECS_CONTAINER_NAME' was not found in task definition '$TASK_DEFINITION_ARN'."
+            exit 1
+          fi
         env:
           ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
           ECS_SERVICE: ${{ vars.ECS_SERVICE }}
+          ECS_CONTAINER_NAME: ${{ vars.ECS_CONTAINER_NAME }}
 
       - name: Render ECS task definition image
         id: render-task-definition
@@ -132,3 +157,14 @@ jobs:
           service: ${{ vars.ECS_SERVICE }}
           wait-for-service-stability: true
           wait-max-delay-seconds: 15
+
+      - name: Print deployed ECS service state
+        run: |
+          aws ecs describe-services \
+            --cluster "$ECS_CLUSTER" \
+            --services "$ECS_SERVICE" \
+            --query 'services[0].{serviceName:serviceName,status:status,taskDefinition:taskDefinition,desiredCount:desiredCount,runningCount:runningCount,pendingCount:pendingCount}' \
+            --output json
+        env:
+          ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+          ECS_SERVICE: ${{ vars.ECS_SERVICE }}
