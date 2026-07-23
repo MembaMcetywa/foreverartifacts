@@ -42,6 +42,11 @@ interface CreateUploadUrlInput {
   contentType: string;
 }
 
+interface CreateUploadUrlResult {
+  assetId: string;
+  uploadUrl: string;
+}
+
 interface AssetRecord {
   id: string;
   key: string;
@@ -60,7 +65,7 @@ export class AssetsService {
 
   async createUploadUrl(
     input: CreateUploadUrlInput,
-  ): Promise<{ assetId: string; uploadUrl: string }> {
+  ): Promise<CreateUploadUrlResult> {
     const assetId = randomUUID();
     const key = `assets/${assetId}/original`;
 
@@ -80,6 +85,42 @@ export class AssetsService {
     });
 
     return { assetId, uploadUrl };
+  }
+
+  async createUploadUrlsBatch(
+    userId: string,
+    files: CreateUploadUrlInput[],
+  ): Promise<CreateUploadUrlResult[]> {
+    const assets = files.map((file) => {
+      const assetId = randomUUID();
+
+      return {
+        assetId,
+        contentType: file.contentType,
+        key: `assets/${assetId}/original`,
+      };
+    });
+
+    const uploadUrls = await Promise.all(
+      assets.map((asset) =>
+        this.storage.getPresignedUploadUrl(asset.key, asset.contentType),
+      ),
+    );
+
+    await this.prisma.asset.createMany({
+      data: assets.map((asset) => ({
+        id: asset.assetId,
+        userId,
+        key: asset.key,
+        contentType: asset.contentType,
+        status: 'pending',
+      })),
+    });
+
+    return assets.map((asset, index) => ({
+      assetId: asset.assetId,
+      uploadUrl: uploadUrls[index],
+    }));
   }
 
   async completeUpload(
