@@ -1140,13 +1140,23 @@ input.creation-shell__title {
 }
 
 .selected-photograph__meta {
-  display: flex;
+  display: grid;
   min-height: 2.75rem;
-  align-items: center;
-  justify-content: space-between;
+  grid-template-columns: minmax(0, 1fr) 2.75rem;
+  align-items: start;
   gap: 0.75rem;
   color: var(--fa-color-muted);
   font-size: 0.6875rem;
+}
+
+.selected-photograph__state {
+  min-width: 0;
+  padding-top: 0.875rem;
+}
+
+.selected-photograph__action {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .selected-photograph__status {
@@ -1165,9 +1175,25 @@ input.creation-shell__title {
   color: var(--fa-color-ink);
 }
 
+.selected-photograph__action-spacer {
+  display: block;
+  width: 2.75rem;
+  min-height: 2.75rem;
+}
+
 .selected-photograph__meta .button:hover {
   color: var(--fa-color-danger);
   cursor: pointer;
+}
+
+.selected-photograph .selected-photograph__error {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  color: var(--fa-color-danger);
+  font-size: 0.75rem;
+  line-height: 1.4;
 }
 
 .photographs-workspace__actions {
