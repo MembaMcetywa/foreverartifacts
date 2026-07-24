@@ -12,7 +12,11 @@ import {
 } from '@nestjs/common';
 
 import { AuthenticatedRequest } from '../auth/auth.types';
-import { CompleteAssetResponseDto, CreateUploadUrlDto } from './assets.dto';
+import {
+  CompleteAssetResponseDto,
+  CreateUploadUrlDto,
+  CreateUploadUrlsBatchDto,
+} from './assets.dto';
 import { AssetProcessingError, AssetsService } from './assets.service';
 import { ImageNormalizationError } from './image-normalizer.service';
 
@@ -29,6 +33,20 @@ export class AssetsController {
       ...dto,
       userId: request.user.id,
     });
+  }
+
+  @Post('upload-urls')
+  createUploadUrlsBatch(
+    @Body() dto: CreateUploadUrlsBatchDto,
+    @Req() request: AuthenticatedRequest,
+  ): Promise<{ assetId: string; uploadUrl: string }[]> {
+    return this.assetsService.createUploadUrlsBatch(
+      request.user.id,
+      dto.files.map((file) => ({
+        ...file,
+        userId: request.user.id,
+      })),
+    );
   }
 
   @Post(':assetId/complete')

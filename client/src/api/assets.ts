@@ -36,6 +36,24 @@ export async function createUploadUrl(
   return (await response.json()) as CreateUploadUrlResponse
 }
 
+export async function createUploadUrlsBatch(
+  files: CreateUploadUrlInput[],
+): Promise<CreateUploadUrlResponse[]> {
+  const response = await apiFetch('/assets/upload-urls', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ files }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to create upload URLs.')
+  }
+
+  return (await response.json()) as CreateUploadUrlResponse[]
+}
+
 export async function uploadAsset(
   uploadUrl: string,
   file: File,

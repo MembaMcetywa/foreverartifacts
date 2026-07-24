@@ -11,18 +11,24 @@ import { SelectedPhotograph } from '../../../components/SelectedPhotograph'
 import { Spinner } from '../../../components/Spinner'
 import { useAlbumNameEditor } from '../../../hooks/useAlbumNameEditor'
 import {
+  completeAssetUpload,
+  createUploadUrlsBatch,
+  uploadAsset,
+} from '../../../api/assets'
+import {
   useAddAlbumAssetsMutation,
   useAlbumQuery,
   useUpdateAlbumWorkflowMutation,
   writeAlbumToCache,
 } from '../../../queries/albums'
-import { useUploadAssetMutation } from '../../../queries/assets'
 import {
   getFileIdentity,
   getImageContentType,
   IMAGE_INPUT_ACCEPT,
   selectImageFiles,
 } from '../../../utils/image-upload-policy'
+
+const UPLOAD_CONCURRENCY = 3
 
 export const Route = createFileRoute('/albums/$albumId/photos')({
   beforeLoad: ({ location }) => requireAuth(location.href),
@@ -41,9 +47,37 @@ export const Route = createFileRoute('/albums/$albumId/photos')({
 })
 
 interface SelectedPhoto {
+  assetId?: string
+  error?: UploadPhotoError
   file: File
   previewUrl: string
-  status: 'failed' | 'selected' | 'uploaded' | 'uploading'
+  status: 'failed' | 'processing' | 'selected' | 'uploaded' | 'uploading'
+}
+
+type UploadFailureStage =
+  | 'album-link'
+  | 'presign'
+  | 'processing'
+  | 's3-upload'
+  | 'validation'
+
+interface UploadPhotoError {
+  message: string
+  retryable: boolean
+  stage: UploadFailureStage
+}
+
+interface UploadCandidate {
+  contentType: string
+  identity: string
+  photo: SelectedPhoto
+}
+
+interface UploadPhotoResult {
+  assetId?: string
+  error?: UploadPhotoError
+  identity: string
+  status: 'failed' | 'uploaded'
 }
 
 function PhotographsPage() {
@@ -55,7 +89,6 @@ function PhotographsPage() {
   const { saveAlbumName, savingAlbumName } = useAlbumNameEditor(albumId)
   const addAlbumAssetsMutation = useAddAlbumAssetsMutation()
   const updateWorkflowMutation = useUpdateAlbumWorkflowMutation()
-  const uploadAssetMutation = useUploadAssetMutation()
   const previewUrls = useRef(new Set<string>())
   const [selectedPhotos, setSelectedPhotos] = useState<SelectedPhoto[]>([])
   const [selectionErrors, setSelectionErrors] = useState<string[]>([])
@@ -116,6 +149,20 @@ function PhotographsPage() {
     event.target.value = ''
   }
 
+  function updatePhoto(identity: string, update: Partial<SelectedPhoto>) {
+    setSelectedPhotos((currentPhotos) =>
+      currentPhotos.map((currentPhoto) =>
+        getFileIdentity(currentPhoto.file) === identity
+          ? { ...currentPhoto, ...update }
+          : currentPhoto,
+      ),
+    )
+  }
+
+  function failPhoto(identity: string, error: UploadPhotoError) {
+    updatePhoto(identity, { error, status: 'failed' })
+  }
+
   function removePhoto(file: File) {
     const identity = getFileIdentity(file)
 
@@ -138,9 +185,7 @@ function PhotographsPage() {
     }
 
     setIsUploading(true)
-    let attemptedUpload = false
-    let uploadFailed = false
-    const uploadedAssetIds: string[] = []
+    const candidates: UploadCandidate[] = []
 
     for (const photo of selectedPhotos) {
       if (photo.status !== 'selected' && photo.status !== 'failed') {
@@ -151,51 +196,89 @@ function PhotographsPage() {
       const contentType = getImageContentType(photo.file)
 
       if (!contentType) {
-        uploadFailed = true
-        toast.error(`${photo.file.name} is not a supported image type.`)
+        failPhoto(identity, {
+          message: `${photo.file.name} is not a supported image type.`,
+          retryable: false,
+          stage: 'validation',
+        })
         continue
       }
 
-      attemptedUpload = true
-
-      setSelectedPhotos((currentPhotos) =>
-        currentPhotos.map((currentPhoto) =>
-          getFileIdentity(currentPhoto.file) === identity
-            ? { ...currentPhoto, status: 'uploading' }
-            : currentPhoto,
-        ),
-      )
-
-      try {
-        const uploadedAsset = await uploadAssetMutation.mutateAsync({
-          file: photo.file,
-          contentType,
-        })
-        uploadedAssetIds.push(uploadedAsset.assetId)
-
-        setSelectedPhotos((currentPhotos) =>
-          currentPhotos.map((currentPhoto) =>
-            getFileIdentity(currentPhoto.file) === identity
-              ? { ...currentPhoto, status: 'uploaded' }
-              : currentPhoto,
-          ),
-        )
-      } catch {
-        uploadFailed = true
-        toast.error(`${photo.file.name} could not be uploaded.`)
-        setSelectedPhotos((currentPhotos) =>
-          currentPhotos.map((currentPhoto) =>
-            getFileIdentity(currentPhoto.file) === identity
-              ? { ...currentPhoto, status: 'failed' }
-              : currentPhoto,
-          ),
-        )
-      }
+      candidates.push({ contentType, identity, photo })
     }
 
-    setIsUploading(false)
+    if (candidates.length === 0) {
+      setIsUploading(false)
+      return
+    }
 
-    if (attemptedUpload && !uploadFailed) {
+    candidates.forEach((candidate) =>
+      updatePhoto(candidate.identity, {
+        assetId: undefined,
+        error: undefined,
+        status: 'uploading',
+      }),
+    )
+
+    let uploadUrls: Awaited<ReturnType<typeof createUploadUrlsBatch>>
+
+    try {
+      uploadUrls = await createUploadUrlsBatch(
+        candidates.map((candidate) => ({
+          filename: candidate.photo.file.name,
+          contentType: candidate.contentType,
+        })),
+      )
+    } catch {
+      candidates.forEach((candidate) =>
+        failPhoto(candidate.identity, {
+          message: `${candidate.photo.file.name} could not be prepared for upload.`,
+          retryable: true,
+          stage: 'presign',
+        }),
+      )
+      toast.error('Upload URLs could not be created. Try again.')
+      setIsUploading(false)
+      return
+    }
+
+    const uploadResults = await uploadPreparedPhotos(
+      candidates,
+      uploadUrls,
+      (identity, status) => updatePhoto(identity, { status }),
+    )
+
+    const uploadedAssetIds = uploadResults.flatMap((result) =>
+      result.status === 'uploaded' && result.assetId ? [result.assetId] : [],
+    )
+    const failedResults = uploadResults.filter(
+      (result) => result.status === 'failed',
+    )
+
+    uploadResults.forEach((result) => {
+      if (result.status === 'uploaded' && result.assetId) {
+        updatePhoto(result.identity, {
+          assetId: result.assetId,
+          error: undefined,
+          status: 'uploaded',
+        })
+        return
+      }
+
+      if (result.error) {
+        failPhoto(result.identity, result.error)
+      }
+    })
+
+    if (failedResults.length > 0) {
+      toast.error(
+        failedResults.length === 1
+          ? '1 photograph could not be uploaded.'
+          : `${failedResults.length} photographs could not be uploaded.`,
+      )
+    }
+
+    if (uploadedAssetIds.length > 0) {
       try {
         await addAlbumAssetsMutation.mutateAsync({
           albumId,
@@ -208,7 +291,7 @@ function PhotographsPage() {
             : `${uploadedAssetIds.length} photographs uploaded.`,
         )
 
-        if (returnTo === 'review' && spread) {
+        if (failedResults.length === 0 && returnTo === 'review' && spread) {
           navigate({
             to: '/albums/$albumId/arrange',
             params: { albumId },
@@ -217,11 +300,27 @@ function PhotographsPage() {
           return
         }
 
-        navigate({
-          to: '/albums/$albumId/arrange',
-          params: { albumId },
-        })
+        if (failedResults.length === 0) {
+          navigate({
+            to: '/albums/$albumId/arrange',
+            params: { albumId },
+          })
+        }
       } catch {
+        uploadedAssetIds.forEach((assetId) => {
+          const result = uploadResults.find(
+            (uploadResult) => uploadResult.assetId === assetId,
+          )
+
+          if (result) {
+            failPhoto(result.identity, {
+              message:
+                'This photograph uploaded, but could not be added to this book.',
+              retryable: true,
+              stage: 'album-link',
+            })
+          }
+        })
         toast.error(
           'Uploaded photographs could not be added to this book. Try uploading again.',
         )
@@ -230,6 +329,8 @@ function PhotographsPage() {
         ])
       }
     }
+
+    setIsUploading(false)
   }
 
   return (
@@ -299,6 +400,7 @@ function PhotographsPage() {
                 {selectedPhotos.map((photo) => (
                   <SelectedPhotograph
                     key={getFileIdentity(photo.file)}
+                    errorMessage={photo.error?.message}
                     name={photo.file.name}
                     previewUrl={photo.previewUrl}
                     status={photo.status}
@@ -330,4 +432,100 @@ function PhotographsPage() {
       )}
     </>
   )
+}
+
+async function uploadPreparedPhotos(
+  candidates: UploadCandidate[],
+  uploadUrls: { assetId: string; uploadUrl: string }[],
+  updateStatus: (
+    identity: string,
+    status: SelectedPhoto['status'],
+  ) => void,
+): Promise<UploadPhotoResult[]> {
+  const results: UploadPhotoResult[] = []
+  let nextIndex = 0
+
+  async function uploadNextPhoto() {
+    const index = nextIndex
+    nextIndex += 1
+
+    if (index >= candidates.length) {
+      return
+    }
+
+    results[index] = await uploadPreparedPhoto(
+      candidates[index],
+      uploadUrls[index],
+      updateStatus,
+    )
+    await uploadNextPhoto()
+  }
+
+  const workerCount = Math.min(UPLOAD_CONCURRENCY, candidates.length)
+  await Promise.all(
+    Array.from({ length: workerCount }, () => uploadNextPhoto()),
+  )
+
+  return results
+}
+
+async function uploadPreparedPhoto(
+  candidate: UploadCandidate,
+  uploadUrl: { assetId: string; uploadUrl: string } | undefined,
+  updateStatus: (
+    identity: string,
+    status: SelectedPhoto['status'],
+  ) => void,
+): Promise<UploadPhotoResult> {
+  if (!uploadUrl) {
+    return {
+      identity: candidate.identity,
+      status: 'failed',
+      error: {
+        message: `${candidate.photo.file.name} could not be prepared for upload.`,
+        retryable: true,
+        stage: 'presign',
+      },
+    }
+  }
+
+  try {
+    await uploadAsset(
+      uploadUrl.uploadUrl,
+      candidate.photo.file,
+      candidate.contentType,
+    )
+  } catch {
+    return {
+      identity: candidate.identity,
+      status: 'failed',
+      error: {
+        message: `${candidate.photo.file.name} could not be uploaded.`,
+        retryable: true,
+        stage: 's3-upload',
+      },
+    }
+  }
+
+  updateStatus(candidate.identity, 'processing')
+
+  try {
+    const completedAsset = await completeAssetUpload(uploadUrl.assetId)
+
+    return {
+      assetId: completedAsset.assetId,
+      identity: candidate.identity,
+      status: 'uploaded',
+    }
+  } catch {
+    return {
+      identity: candidate.identity,
+      status: 'failed',
+      error: {
+        message: `${candidate.photo.file.name} could not be processed.`,
+        retryable: true,
+        stage: 'processing',
+      },
+    }
+  }
 }
